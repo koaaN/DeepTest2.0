@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deeptesting-client"
+version = "0.1.0"
+description = "Python client for the DeepTesting 17.0.3 API"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "cryptography>=41",
+    "flask>=3.0",
+    "requests>=2.31",
+]
+
+[project.scripts]
+deeptesting = "deeptesting.cli:main"
+deeptesting-token = "deeptesting.token_cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
