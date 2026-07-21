@@ -3,6 +3,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from deeptesting.models import BusinessToken
 from deeptesting.refresh import BusinessTokenRefresher
@@ -51,8 +52,18 @@ class TokenCacheTests(unittest.TestCase):
             path = Path(directory) / "auth.json"
             cache = TokenCache(path)
             cache.save(BusinessToken("access", "device"))
-            self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+            if os.name != "nt":
+                self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
             self.assertEqual(cache.load().access_token, "access")
+
+    def test_cache_saves_without_fchmod(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "auth.json"
+            cache = TokenCache(path)
+            with mock.patch("deeptesting.private_file.os.fchmod", None, create=True):
+                cache.save(BusinessToken("access", "device"))
+            self.assertEqual(cache.load().access_token, "access")
+            self.assertEqual(list(Path(directory).glob(".auth-*")), [])
 
 
 class RefreshPayloadTests(unittest.TestCase):

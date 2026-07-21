@@ -18,6 +18,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .errors import ProtocolError
 from .heytap_models import HeyTapConfig, HeyTapDeviceProfile, new_trace_id
+from .private_file import atomic_write_private
 
 
 DEFAULT_RSA_PUBLIC_KEY = (
@@ -263,9 +264,5 @@ class HeyTapV1Transport:
             serialization.load_der_public_key(der)
         except (ValueError, TypeError) as exc:
             raise ProtocolError("HTTP 222 did not contain a valid RSA public key") from exc
-        self.rsa_key_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        temporary = self.rsa_key_path.with_suffix(".tmp")
-        temporary.write_bytes(der)
-        os.chmod(temporary, 0o600)
-        os.replace(temporary, self.rsa_key_path)
+        atomic_write_private(self.rsa_key_path, der, prefix=f".{self.rsa_key_path.name}-")
         self._rsa_der = der

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from pathlib import Path
 from typing import Any, Callable, Generic, TypeVar
 
@@ -16,6 +14,7 @@ from .heytap_models import (
 )
 from .heytap_transport import HeyTapV1Transport, compact_json
 from .models import BusinessToken
+from .private_file import atomic_write_private
 from .tokens import TokenCache
 
 
@@ -39,23 +38,8 @@ class SecureJsonCache(Generic[T]):
         return self.loader(value)
 
     def save(self, value: Any) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        payload = json.dumps(value.to_dict(), ensure_ascii=False, indent=2) + "\n"
-        fd, temporary_name = tempfile.mkstemp(prefix=f".{self.path.name}-", dir=self.path.parent)
-        try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary_name, self.path)
-            os.chmod(self.path, 0o600)
-        except Exception:
-            try:
-                os.unlink(temporary_name)
-            except FileNotFoundError:
-                pass
-            raise
+        payload = (json.dumps(value.to_dict(), ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+        atomic_write_private(self.path, payload, prefix=f".{self.path.name}-")
 
 
 class HeyTapAuthClient:

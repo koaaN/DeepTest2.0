@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
 from .errors import ProtocolError
 from .models import BusinessToken
+from .private_file import atomic_write_private
 
 
 class TokenCache:
@@ -26,23 +25,8 @@ class TokenCache:
         return BusinessToken.from_dict(value)
 
     def save(self, token: BusinessToken) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        payload = json.dumps(token.to_dict(), indent=2, ensure_ascii=False) + "\n"
-        fd, temporary_name = tempfile.mkstemp(prefix=".auth-", dir=self.path.parent)
-        try:
-            os.fchmod(fd, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                handle.write(payload)
-                handle.flush()
-                os.fsync(handle.fileno())
-            os.replace(temporary_name, self.path)
-            os.chmod(self.path, 0o600)
-        except Exception:
-            try:
-                os.unlink(temporary_name)
-            except FileNotFoundError:
-                pass
-            raise
+        payload = (json.dumps(token.to_dict(), indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+        atomic_write_private(self.path, payload, prefix=".auth-")
 
     @staticmethod
     def extract_auth_response(
