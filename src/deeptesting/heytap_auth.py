@@ -126,7 +126,7 @@ class HeyTapAuthClient:
                     validation_headers,
                 )
                 if self._code(check) == 101001:
-                    raise HeyTapApiError(101001, self._message(check), self._error_data(check))
+                    raise HeyTapApiError(101001, self._message(check), self._error_data(check), check)
             else:
                 return LoginChallenge(
                     "captcha",
@@ -285,6 +285,7 @@ class HeyTapAuthClient:
             id_token=primary.id_token,
         )
         token = TokenCache.extract_auth_response(response)
+        token.deeptesting_token = primary.secondary_token_map.get(self.config.biz_package, "")
         token.require_access()
         return token
 
@@ -347,6 +348,7 @@ class HeyTapAuthClient:
                 str(key): str(value)
                 for key, value in secondary.items()
             },
+            host=getattr(self.transport, "host", primary.host),
         )
         token.require_access()
         return token
@@ -373,7 +375,7 @@ class HeyTapAuthClient:
     def _data(cls, response: dict[str, Any], operation: str) -> dict[str, Any]:
         code = cls._code(response)
         if code != 200:
-            raise HeyTapApiError(code, cls._message(response), cls._error_data(response))
+            raise HeyTapApiError(code, cls._message(response), cls._error_data(response), response)
         data = response.get("data")
         if data is None:
             raise ProtocolError(f"{operation} returned no data")
@@ -385,7 +387,7 @@ class HeyTapAuthClient:
     def _optional_data(cls, response: dict[str, Any], operation: str) -> dict[str, Any]:
         code = cls._code(response)
         if code != 200:
-            raise HeyTapApiError(code, cls._message(response), cls._error_data(response))
+            raise HeyTapApiError(code, cls._message(response), cls._error_data(response), response)
         data = response.get("data")
         if data is None:
             return {}

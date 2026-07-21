@@ -42,6 +42,7 @@ class HeyTapV1Transport:
         now_ms: Callable[[], int] | None = None,
     ):
         self.config = config or HeyTapConfig()
+        self.host = self.config.host.rstrip("/")
         self.device = device or HeyTapDeviceProfile()
         self.timeout = timeout
         self.http = http or requests.Session()
@@ -65,16 +66,9 @@ class HeyTapV1Transport:
         primary_token: str = "",
     ) -> dict[str, Any]:
         plaintext = compact_json({key: value for key, value in payload.items() if value is not None})
-        response = self._send(
-            path,
-            plaintext,
-            headers or {},
-            access_token=access_token,
-            id_token=id_token,
-            primary_token=primary_token,
-        )
-        if response.status_code == 222:
-            self._rotate_rsa(response.content)
+        retried_region = False
+        rotated_rsa = False
+        while True:
             response = self._send(
                 path,
                 plaintext,
@@ -83,20 +77,49 @@ class HeyTapV1Transport:
                 id_token=id_token,
                 primary_token=primary_token,
             )
-        if response.status_code == 233:
-            raise ProtocolError("HeyTap returned HTTP 233")
-        response.raise_for_status()
-        text = response.text.strip()
-        if not text:
-            raise ProtocolError("HeyTap returned an empty encrypted response")
-        try:
-            decrypted = self.decrypt_response(text)
-            result = json.loads(decrypted)
-        except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ProtocolError("could not decrypt or decode HeyTap response") from exc
-        if not isinstance(result, dict):
-            raise ProtocolError("HeyTap response is not a JSON object")
-        return result
+            if response.status_code == 222 and not rotated_rsa:
+                self._rotate_rsa(response.content)
+                rotated_rsa = True
+                continue
+            if response.status_code == 222:
+                raise ProtocolError("HeyTap returned HTTP 222 twice")
+            if response.status_code == 233:
+                raise ProtocolError("HeyTap returned HTTP 233")
+            response.raise_for_status()
+            text = response.text.strip()
+            if not text:
+                raise ProtocolError("HeyTap returned an empty encrypted response")
+            try:
+                decrypted = self.decrypt_response(text)
+                result = json.loads(decrypted)
+            except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise ProtocolError("could not decrypt or decode HeyTap response") from exc
+            if not isinstance(result, dict):
+                raise ProtocolError("HeyTap response is not a JSON object")
+            if result.get("code") == 301 and not retried_region:
+                host = self._regional_host(result)
+                if host and host != self.host:
+                    self.host = host
+                    retried_region = True
+                    continue
+            return result
+
+    @staticmethod
+    def _regional_host(result: dict[str, Any]) -> str:
+        error = result.get("error")
+        data = error.get("errorData") if isinstance(error, dict) else None
+        if not isinstance(data, dict):
+            return ""
+        country = data.get("countryCode")
+        mapping = data.get("countryDomainMapping")
+        if not isinstance(country, str) or not isinstance(mapping, dict):
+            return ""
+        country = country.upper()
+        for countries, host in mapping.items():
+            if isinstance(countries, str) and isinstance(host, str):
+                if country in {item.strip().upper() for item in countries.split(",")}:
+                    return host.rstrip("/")
+        return ""
 
     def signing_headers(self, plaintext: bytes) -> dict[str, str]:
         request_time = str(self._now_ms())
@@ -215,7 +238,7 @@ class HeyTapV1Transport:
         if primary_token:
             request_headers["X-AcPrimaryToken"] = primary_token
         return self.http.post(
-            f"{self.config.host.rstrip('/')}/{path.lstrip('/')}",
+            f"{self.host}/{path.lstrip('/')}",
             data=self.encrypt_body(plaintext),
             headers=request_headers,
             timeout=self.timeout,

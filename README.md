@@ -23,6 +23,22 @@ Send an SMS or email code:
 .venv/bin/deeptesting-token login --email 'person@example.com'
 ```
 
+HeyTap routes accounts to regional UserCenter hosts. The default host is
+`https://client-uc.heytapmobi.com`. If the server returns `301 domain error`,
+the client automatically selects the host matching `countryCode`, retries the
+request once, and stores that host in the login/primary cache for the next
+flow step. If the mapping is missing or the regional retry also fails, the CLI
+prints the complete response and a suggested retry command:
+
+```bash
+.venv/bin/deeptesting-token login --email 'person@example.com' \
+  --host 'https://uc-client-sg.heytapmobile.com'
+```
+
+The same host must be supplied to the later command that continues the flow
+(`verify`, `resume`, `biz-auth`, or `primary-refresh`). It can also be set once
+with `DEEPTEST_HEYTAP_HOST`.
+
 When `authn/check` requires a slider CAPTCHA, `login` starts a local server,
 opens the challenge in the default browser, waits up to five minutes, and
 automatically retries the check. Use `--no-open-browser` to print the local URL
@@ -113,6 +129,10 @@ export DEEPTEST_CHIP_ID='<raw /proc/oplusVersion/serialID value>' # or "0x" + ge
 .venv/bin/deeptesting apply-unlock
 .venv/bin/deeptesting get-history-unlock-code
 ```
+
+The DeepTesting request uses the secondary token scoped to
+`com.coloros.deeptesting` when it is present in the business cache. Older
+caches without that field fall back to their existing business access token.
 
 Default device profile:
 

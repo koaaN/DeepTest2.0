@@ -91,6 +91,46 @@ class HeyTapTransportTests(unittest.TestCase):
         self.assertEqual(http.calls, 2)
         self.assertEqual(self.transport.rsa_key_path.read_bytes(), new_key)
 
+    def test_301_selects_regional_host_and_retries_once(self):
+        responses = []
+        for result in (
+            {
+                "code": 301,
+                "error": {
+                    "message": "domain error",
+                    "errorData": {
+                        "countryCode": "PK",
+                        "countryDomainMapping": {
+                            "SG,PK": "https://uc-client-sg.heytapmobile.com"
+                        },
+                    },
+                },
+            },
+            {"code": 200, "data": {"processToken": "p"}},
+        ):
+            response = requests.Response()
+            response.status_code = 200
+            encryptor = Cipher(algorithms.AES(b"k" * 32), modes.CTR(b"i" * 16)).encryptor()
+            encrypted = encryptor.update(json.dumps(result, separators=(",", ":")).encode()) + encryptor.finalize()
+            response._content = base64.b64encode(encrypted)
+            responses.append(response)
+
+        class FakeHttp:
+            def __init__(self):
+                self.responses = iter(responses)
+                self.urls = []
+
+            def post(self, url, **kwargs):
+                self.urls.append(url)
+                return next(self.responses)
+
+        http = FakeHttp()
+        self.transport.http = http
+        result = self.transport.post("/identity/v1/authn/check", {"accountId": "a"})
+        self.assertEqual(result["code"], 200)
+        self.assertEqual(self.transport.host, "https://uc-client-sg.heytapmobile.com")
+        self.assertEqual(http.urls[1], "https://uc-client-sg.heytapmobile.com/identity/v1/authn/check")
+
 
 if __name__ == "__main__":
     unittest.main()

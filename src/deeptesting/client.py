@@ -52,7 +52,7 @@ class DeepTestingClient:
             self.establish_session()
         assert self._lk is not None
 
-        payload = self.profile.request_payload(endpoint, self.token.access_token)
+        payload = self.profile.request_payload(endpoint, self.token.new_token)
         plaintext = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
         body = {"params": self._lk.encrypt(plaintext)}
         response = self.http.post(

@@ -59,6 +59,7 @@ class BusinessToken:
     refresh_token_refresh_ahead: int = 0
     ssoid: str = ""
     extra_data_json: str = ""
+    deeptesting_token: str = ""
 
     def __post_init__(self) -> None:
         if not self.ssoid and self.id_token:
@@ -67,6 +68,10 @@ class BusinessToken:
     def require_access(self) -> None:
         if not self.access_token or not self.device_id:
             raise AuthenticationError("business token requires access_token and device_id")
+
+    @property
+    def new_token(self) -> str:
+        return self.deeptesting_token or self.access_token
 
     def access_needs_refresh(self, now_ms: int | None = None) -> bool:
         if not self.access_token_exp:
@@ -96,6 +101,7 @@ class BusinessToken:
             "accessTokenRfAdv": "access_token_refresh_ahead",
             "refreshTokenRfAdv": "refresh_token_refresh_ahead",
             "extraDataJson": "extra_data_json",
+            "deeptestingToken": "deeptesting_token",
             "id": "ssoid",
         }
         normalized = {aliases.get(key, key): item for key, item in value.items()}

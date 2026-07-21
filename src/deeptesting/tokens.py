@@ -73,7 +73,18 @@ class TokenCache:
                 for key, item in defaults.items():
                     if item:
                         token_data.setdefault(key, item)
+            secondary = data.get("secondaryTokenMap")
+            if isinstance(secondary, dict):
+                token_data["deeptestingToken"] = str(
+                    secondary.get("com.coloros.deeptesting") or ""
+                )
             return BusinessToken.from_dict(token_data)
         if isinstance(data, dict):
-            return BusinessToken.from_dict(data)
+            token = BusinessToken.from_dict(data)
+            secondary = data.get("secondaryTokenMap")
+            if isinstance(secondary, dict):
+                token.deeptesting_token = str(
+                    secondary.get("com.coloros.deeptesting") or ""
+                )
+            return token
         raise ProtocolError("authorization response does not contain a token object")

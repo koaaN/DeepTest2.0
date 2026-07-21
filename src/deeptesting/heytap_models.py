@@ -71,6 +71,7 @@ class PrimaryAccountToken:
     user_name: str = ""
     country_code: str = ""
     secondary_token_map: dict[str, str] = field(default_factory=dict)
+    host: str = ""
 
     def require_access(self) -> None:
         required = (
@@ -100,6 +101,7 @@ class PrimaryAccountToken:
             "userName": "user_name",
             "countryCode": "country_code",
             "secondaryTokenMap": "secondary_token_map",
+            "host": "host",
         }
         normalized = {aliases.get(key, key): item for key, item in value.items()}
         allowed = {item.name for item in fields(cls)}
@@ -125,6 +127,7 @@ class PrimaryAccountToken:
             user_name=str(value.get("userName") or ""),
             country_code=str(value.get("countryCode") or ""),
             secondary_token_map={str(key): str(item) for key, item in secondary.items()},
+            host="",
         )
         token.require_access()
         return token
@@ -139,6 +142,7 @@ class LoginSession:
     ticket: str = ""
     code_length: int = 0
     created_at: int = field(default_factory=lambda: int(time.time()))
+    host: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

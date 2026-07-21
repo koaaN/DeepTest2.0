@@ -36,7 +36,7 @@ class DeepTestingClientTests(unittest.TestCase):
         )
         http = FakeHttp({"resps": encrypted_response})
         profile = DeviceProfile("guid", "device", chip_id="0x123")
-        token = BusinessToken("access", "device")
+        token = BusinessToken("access", "device", deeptesting_token="TOKEN_deeptesting")
         client = DeepTestingClient(profile, token, http=http)
         client._lk = lk
 
@@ -49,7 +49,7 @@ class DeepTestingClientTests(unittest.TestCase):
         self.assertIn("x-otci-cipherInfo", request["headers"])
         encrypted_request = request["json"]["params"]
         plaintext = json.loads(lk.decrypt(encrypted_request))
-        self.assertEqual(plaintext["newToken"], "access")
+        self.assertEqual(plaintext["newToken"], "TOKEN_deeptesting")
         self.assertEqual(plaintext["udid"], "guid")
 
     def test_device_id_must_match_token(self):

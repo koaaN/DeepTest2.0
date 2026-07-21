@@ -9,9 +9,9 @@ from pathlib import Path
 import requests
 
 from .captcha_handler import solve_captcha
-from .errors import DeepTestingError, ProtocolError
+from .errors import DeepTestingError, HeyTapApiError, ProtocolError
 from .heytap_auth import HeyTapAuthClient, default_login_cache, default_primary_cache
-from .heytap_models import HeyTapDeviceProfile, LoginChallenge
+from .heytap_models import HeyTapConfig, HeyTapDeviceProfile, LoginChallenge
 from .heytap_transport import HeyTapV1Transport
 from .refresh import BusinessTokenRefresher, RefreshConfig
 from .tokens import TokenCache
@@ -28,6 +28,19 @@ def _read_json(path: str) -> dict:
     return value
 
 
+def _host_for_country(mapping: object, country: object) -> str:
+    if not isinstance(mapping, dict) or not isinstance(country, str):
+        return ""
+    country = country.strip().upper()
+    for countries, host in mapping.items():
+        if not isinstance(countries, str) or not isinstance(host, str):
+            continue
+        if country in {item.strip().upper() for item in countries.split(",")}:
+            return host.rstrip("/")
+    default = mapping.get("default")
+    return default.rstrip("/") if isinstance(default, str) else ""
+
+
 def _auth_client(args: argparse.Namespace) -> HeyTapAuthClient:
     device = HeyTapDeviceProfile(
         model=args.model,
@@ -36,7 +49,13 @@ def _auth_client(args: argparse.Namespace) -> HeyTapAuthClient:
         guid=args.guid,
         device_id=args.device_id,
     )
-    transport = HeyTapV1Transport(device=device, timeout=args.timeout)
+    transport = HeyTapV1Transport(
+        config=HeyTapConfig(
+            host=args.host or os.getenv("DEEPTEST_HEYTAP_HOST") or "https://client-uc.heytapmobi.com"
+        ),
+        device=device,
+        timeout=args.timeout,
+    )
     captcha_timeout = getattr(args, "captcha_timeout", 300.0)
     no_open_browser = getattr(args, "no_open_browser", False)
     return HeyTapAuthClient(
@@ -69,6 +88,11 @@ def _add_auth_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--device-id", default=os.getenv("DEEPTEST_DEVICE_ID", ""))
     parser.add_argument("--model", default=os.getenv("DEEPTEST_MODEL", "PLK110"))
     parser.add_argument("--timeout", type=float, default=30)
+    parser.add_argument(
+        "--host",
+        default=None,
+        help="HeyTap UserCenter host; use the host reported by a 301 domain error",
+    )
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -151,17 +175,22 @@ def main() -> int:
             )
             if isinstance(result, LoginChallenge):
                 return _challenge(result)
+            result.host = client.transport.host
             login_cache.save(result)
             print(f"verification code sent; saved login session: {login_cache.path}")
             return 0
 
         if args.command in {"biz-auth", "primary-refresh"}:
             primary = primary_cache.load()
+            if primary.host and not args.host and not os.getenv("DEEPTEST_HEYTAP_HOST"):
+                client.transport.host = primary.host.rstrip("/")
             if args.command == "primary-refresh":
                 primary = client.refresh_primary(primary, env_param=args.env_param)
                 primary_cache.save(primary)
         else:
             session = login_cache.load()
+            if session.host and not args.host and not os.getenv("DEEPTEST_HEYTAP_HOST"):
+                client.transport.host = session.host.rstrip("/")
             if args.command == "verify":
                 result = client.verify_code(session, args.code)
             elif args.stage == "verification":
@@ -169,16 +198,35 @@ def main() -> int:
             else:
                 result = client.exchange_ticket(session, args.ticket)
             if isinstance(result, LoginChallenge):
+                session.host = client.transport.host
                 login_cache.save(session)
                 return _challenge(result)
             primary = result
+            primary.host = client.transport.host
             primary_cache.save(primary)
 
         business = client.biz_auth(primary, env_param=args.env_param)
+        primary.host = client.transport.host
+        primary_cache.save(primary)
         token_cache.save(business)
         print(f"saved primary token cache: {primary_cache.path}")
         print(f"saved business token cache: {token_cache.path}")
         return 0
+    except HeyTapApiError as exc:
+        if exc.code == 301:
+            print(f"error: HeyTap request failed: {exc.code} {exc.message}", file=sys.stderr)
+            if exc.response is not None:
+                print(json.dumps(exc.response, indent=2, ensure_ascii=False), file=sys.stderr)
+            mapping = exc.error_data.get("countryDomainMapping") if isinstance(exc.error_data, dict) else None
+            country = exc.error_data.get("countryCode") if isinstance(exc.error_data, dict) else None
+            host = _host_for_country(mapping, country)
+            if host:
+                print(f"hint: retry with --host {host} for region {country}", file=sys.stderr)
+            else:
+                print("hint: retry with --host <regional-host> from countryDomainMapping", file=sys.stderr)
+        else:
+            print(f"error: {exc}", file=sys.stderr)
+        return 1
     except (DeepTestingError, requests.RequestException, RuntimeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

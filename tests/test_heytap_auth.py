@@ -29,7 +29,7 @@ PRIMARY_RESPONSE = {
         "refreshTicket": "refresh-ticket",
         "ssoid": "10001",
         "deviceId": "device-id",
-        "secondaryTokenMap": {},
+        "secondaryTokenMap": {"com.coloros.deeptesting": "TOKEN_deeptesting"},
     },
 }
 
@@ -135,6 +135,7 @@ class HeyTapAuthTests(unittest.TestCase):
         }])
         token = HeyTapAuthClient(transport).biz_auth(primary)
         self.assertEqual(token.access_token, "business-access")
+        self.assertEqual(token.deeptesting_token, "TOKEN_deeptesting")
         self.assertEqual(token.device_id, "device-id")
         self.assertEqual(transport.calls[0][2]["access_token"], "primary-access")
         self.assertEqual(transport.calls[0][2]["id_token"], "primary-id")

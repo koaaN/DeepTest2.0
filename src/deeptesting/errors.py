@@ -13,8 +13,9 @@ class AuthenticationError(DeepTestingError):
 class HeyTapApiError(AuthenticationError):
     """HeyTap rejected an account or authorization request."""
 
-    def __init__(self, code: int, message: str, error_data: object = None):
+    def __init__(self, code: int, message: str, error_data: object = None, response: object = None):
         super().__init__(f"HeyTap request failed: {code} {message}".rstrip())
         self.code = code
         self.message = message
         self.error_data = error_data
+        self.response = response
