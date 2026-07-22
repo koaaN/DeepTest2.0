@@ -5,11 +5,13 @@ Python implementation of the protocols used by `com.coloros.deeptesting`
 login, primary-token exchange, DeepTesting business authorization, and all six
 current DeepTesting endpoints.
 
-## Install
+## Installation
 
 ```bash
 python -m venv .venv
-.venv/bin/pip install -e .
+source .venv/bin/activate        # Linux / macOS
+# .venv\Scripts\activate         # Windows
+pip install -e .
 ```
 
 ## Token cache
@@ -19,8 +21,8 @@ python -m venv .venv
 Send an SMS or email code:
 
 ```bash
-.venv/bin/deeptesting-token login --phone '13800000000' --country-calling-code +86
-.venv/bin/deeptesting-token login --email 'person@example.com'
+deeptesting-token login --phone '13800000000' --country-calling-code +86
+deeptesting-token login --email 'person@example.com'
 ```
 
 HeyTap routes accounts to regional UserCenter hosts. The default host is
@@ -31,7 +33,7 @@ flow step. If the mapping is missing or the regional retry also fails, the CLI
 prints the complete response and a suggested retry command:
 
 ```bash
-.venv/bin/deeptesting-token login --email 'person@example.com' \
+deeptesting-token login --email 'person@example.com' \
   --host 'https://uc-client-sg.heytapmobile.com'
 ```
 
@@ -48,7 +50,7 @@ JSON returned by the CAPTCHA is sent unchanged as `captchaCode`.
 Complete login and create the DeepTesting business token cache:
 
 ```bash
-.venv/bin/deeptesting-token verify 123456
+deeptesting-token verify 123456
 ```
 
 The login flow writes these mode-`0600` files under
@@ -66,14 +68,14 @@ If no CAPTCHA handler is configured through the Python API, CAPTCHA remains an
 URL and can be resumed after obtaining its ticket:
 
 ```bash
-.venv/bin/deeptesting-token resume --stage verification --ticket '<ticket>'
-.venv/bin/deeptesting-token resume --stage completion --ticket '<ticket>'
+deeptesting-token resume --stage verification --ticket '<ticket>'
+deeptesting-token resume --stage completion --ticket '<ticket>'
 ```
 
 Refresh primary tokens and issue a fresh DeepTesting business authorization:
 
 ```bash
-.venv/bin/deeptesting-token primary-refresh
+deeptesting-token primary-refresh
 ```
 
 The client generates the same unsigned SafetyCheck compatibility fallback used
@@ -86,7 +88,7 @@ authorization. Server acceptance of the compatibility fallback can vary.
 Import a complete `AuthResponse`, a `bizAuth` response, or its `data` object:
 
 ```bash
-.venv/bin/deeptesting-token import auth-response.json
+deeptesting-token import auth-response.json
 ```
 
 The default cache is `~/.config/deeptesting/auth.json`. It is written with mode
@@ -122,12 +124,17 @@ passed as flags or environment variables:
 
 ```bash
 export DEEPTEST_UDID='<GUID returned by the Oplus ID provider>'
-export DEEPTEST_CHIP_ID='<raw /proc/oplusVersion/serialID value>' # or "0x" + getprop ro.boot.chipid
+export DEEPTEST_CHIP_ID='<raw /proc/oplusVersion/serialID value>'
 
-.venv/bin/deeptesting get-apply-status
-.venv/bin/deeptesting unlock-condition-match
-.venv/bin/deeptesting apply-unlock
-.venv/bin/deeptesting get-history-unlock-code
+# Windows PowerShell:  $env:DEEPTEST_UDID='<value>'
+# Windows CMD:         set DEEPTEST_UDID=<value>
+```
+
+```bash
+deeptesting get-apply-status
+deeptesting unlock-condition-match
+deeptesting apply-unlock
+deeptesting get-history-unlock-code
 ```
 
 The DeepTesting request uses the secondary token scoped to
@@ -162,7 +169,7 @@ key with P-256 ECDH and HKDF-SHA256, and encrypt both request and response.
 For a one-off token without a cache:
 
 ```bash
-.venv/bin/deeptesting get-apply-status \
+deeptesting get-apply-status \
   --token '<business accessToken>' \
   --device-id '<business deviceId>' \
   --udid '<device GUID>'
@@ -174,7 +181,7 @@ The cache must contain `accessToken`, `refreshToken`, `ssoid`, `deviceId`,
 `host`, and preferably `pkgSign`. SafetyCheck output can be supplied explicitly:
 
 ```bash
-.venv/bin/deeptesting-token refresh --env-param '<vendor SafetyCheck value>'
+deeptesting-token refresh --env-param '<vendor SafetyCheck value>'
 ```
 
 This is the older direct business `/api/token/refresh` implementation. New
