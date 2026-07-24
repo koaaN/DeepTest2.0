@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "deeptesting-client"
 version = "0.1.0"
-description = "Python client for the DeepTesting 17.0.3 API"
+description = "DeepTest 2.0 graphical and command-line client for the DeepTesting API"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -17,6 +17,10 @@ dependencies = [
 [project.scripts]
 deeptesting = "deeptesting.cli:main"
 deeptesting-token = "deeptesting.token_cli:main"
+deeptesting-gui = "deeptesting.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+deeptesting = ["assets/*.jar"]

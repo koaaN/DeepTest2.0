@@ -3,3 +3,8 @@ __pycache__/
 .pytest_cache/
 .venv/
 auth.json
+build/
+dist/
+*.spec
+DeepTest2-linux-x86_64.tar.gz
+oplusreserve1/*.img

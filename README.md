@@ -1,9 +1,20 @@
-# DeepTesting client
+# DeepTest 2.0
+
+> DeepTest 2.0 is an independent graphical client built on the protocol implementation and research from [mikoker/deeptest](https://github.com/mikoker/deeptest). Please review the upstream license and project history before redistributing.
 
 Python implementation of the protocols used by `com.coloros.deeptesting`
 17.0.3 and the current CN HeyTap UserCenter. It supports SMS/email verification
 login, primary-token exchange, DeepTesting business authorization, and all six
 current DeepTesting endpoints.
+
+## Python GUI
+
+This repository includes the DeepTest 2.0 graphical Python app for sign-in, token import and
+refresh, device configuration, and all six DeepTesting actions.
+
+After installing the Python environment, double-click `launch-deeptesting.sh`
+or start it from a Python environment with `deeptesting-gui`. The GUI is
+portable and does not install an application-menu entry.
 
 ## Installation
 
@@ -130,6 +141,10 @@ export DEEPTEST_CHIP_ID='<raw /proc/oplusVersion/serialID value>'
 # Windows CMD:         set DEEPTEST_UDID=<value>
 ```
 
+The Chip ID can be read with `adb shell cat /proc/oplusVersion/serialID` on a
+rooted device. On a non-rooted device, use `adb shell getprop ro.boot.chipid`
+and add the `0x` prefix when it is not already present.
+
 ```bash
 deeptesting get-apply-status
 deeptesting unlock-condition-match
@@ -161,6 +176,24 @@ lock-client
 unlock-condition-match
 get-history-unlock-code
 ```
+
+## Apply the issued authorization to the phone
+
+The Device page can pass an approved unlock code to the connected phone with
+**Apply authorization to phone**. This step requires one authorized ADB device,
+root access granted to the ADB shell, and an unlock code returned by **Check
+status** or **Get unlock code**.
+
+DeepTest pushes its packaged Android helper to `/data/local/tmp` and invokes
+`android.engineer.OplusEngineerManager.fastbootUnlock` through `app_process`.
+It does not reboot the phone, erase data, enable the OEM-unlock setting, or run
+`fastboot flashing unlock`. The later bootloader-unlock operation remains a
+separate, destructive step.
+
+This integration is based on the documented mechanism in
+[mikoker/unlock-helper](https://github.com/mikoker/unlock-helper). DeepTest
+contains its own minimal helper implementation. The GUI keeps the issued code
+in memory only and redacts it from the displayed helper command.
 
 Use `--register-keys` to call `/crypto/cert/register` before creating the `lk`
 session. Normal requests perform `/crypto/cert/upgrade`, derive an AES-256-GCM
