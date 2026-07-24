@@ -61,7 +61,7 @@ Linux:   /home/<user>/.config/deeptesting/
 Windows: C:\Users\<user>\.config\deeptesting\
 ```
 
-Treat these JSON files as secrets and never upload them. Device settings are also local and are not sent to the repository.
+Treat these JSON files as secrets, keep a secure backup somewhere safe, and never upload them. Device settings are also local and are not sent to the repository.
 
 ## Building from source
 
