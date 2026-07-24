@@ -64,4 +64,4 @@ Treat these JSON files as secrets and never upload them. Device settings are als
 
 ## Building from source
 
-The repository includes separate GitHub Actions workflows for Linux and Windows, plus a combined release workflow. Maintainers can run them from the **Actions** tab or trigger the release workflow with a `v*` tag.
+The repository includes separate GitHub Actions workflows for Linux and Windows, plus a combined release workflow.
