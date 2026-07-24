@@ -547,7 +547,7 @@ class DeepTestingApp(tk.Tk):
                     capture_output=True, text=True,
                 )
                 output = (result.stdout + result.stderr).strip().lower()
-                ok = result.returncode == 0 and "root complete" in output
+                ok = result.returncode == 0 and ("root complete" in output or "uid=0(root)" in output)
                 detail = "Complete — root complete" if ok else ("Failed — script returned an error" if result.returncode else "Failed — completion message missing")
                 self.after(0, self._root_helper_finished, ok, detail, result.stdout + result.stderr)
             except Exception as exc:
