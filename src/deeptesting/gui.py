@@ -1250,12 +1250,20 @@ class DeepTestingApp(tk.Tk):
                 capture_output=True, text=True, timeout=10,
             )
             ota = ota_result.stdout.strip()
-            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota)
+            try:
+                display_result = subprocess.run(
+                    [adb, "-s", serial, "shell", "getprop", "ro.build.display.id"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                display_id = display_result.stdout.strip()
+            except (OSError, subprocess.TimeoutExpired):
+                display_id = ""
+            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota, display_id)
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _connected_device_updated(
-        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = ""
+        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = "", display_id: str = ""
     ) -> None:
         if error:
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
@@ -1265,7 +1273,7 @@ class DeepTestingApp(tk.Tk):
             target_name = "OnePlus 15"
         elif prj_id == "24855":
             target_name = "OnePlus Ace 6T"
-        self._connected_device_info = (target_name, model, serial, prj_id)
+        self._connected_device_info = (target_name, model, serial, prj_id, display_id)
         self._render_connected_device()
         if prj_id == "24831":
             self.vars["model"].set("PLK110")
@@ -1293,9 +1301,10 @@ class DeepTestingApp(tk.Tk):
         entry.configure(show="" if entry.cget("show") else "•")
 
     def _render_connected_device(self) -> None:
-        target_name, model, serial, prj_id = getattr(self, "_connected_device_info", ("Android device", "", "", ""))
+        target_name, model, serial, prj_id, display_id = getattr(self, "_connected_device_info", ("Android device", "", "", "", ""))
         shown_serial = serial if self._show_sensitive else ("*" * len(serial) if serial else "unknown")
-        self.connected_device_status.configure(text=f"●  {target_name}\n{model}\n{shown_serial}\nPRJ-ID: {prj_id or 'unknown'}", fg=self.SUCCESS)
+        build_line = f"\nBuild: {display_id}" if display_id else ""
+        self.connected_device_status.configure(text=f"●  {target_name}\n{model}\n{shown_serial}\nPRJ-ID: {prj_id or 'unknown'}{build_line}", fg=self.SUCCESS)
     def _chip_id_detected(self, value: str) -> None:
         self.vars["chip_id"].set(value)
         self._save_settings()
