@@ -536,12 +536,14 @@ class DeepTestingApp(tk.Tk):
         self.update_idletasks()
         target_folder = "ACE6T" if str(self.vars["model"].get()).upper() == "PLR110" else "OP15"
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
-        script = bundle_root / "android-helper" / "assets" / target_folder / "root.sh"
+        script_dir = bundle_root / "android-helper" / "assets" / target_folder
+        script = script_dir / ("root.bat" if os.name == "nt" else "root.sh")
 
         def worker() -> None:
             try:
+                command = ["cmd", "/c", str(script)] if os.name == "nt" else ["sh", str(script)]
                 result = subprocess.run(
-                    ["sh", str(script)], cwd=str(script.parent),
+                    command, cwd=str(script_dir),
                     capture_output=True, text=True,
                 )
                 output = (result.stdout + result.stderr).strip().lower()
