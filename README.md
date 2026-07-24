@@ -44,7 +44,7 @@ The Connected Device card shows the live ADB connection. Saved target-device fie
 
 1. Open **Account Login** and sign in with HeyTap.
 2. Continue to **Device & unlock**.
-3. Confirm the detected model, PRJ-ID, OTA version, and chip ID.
+3. Confirm the detected device details.
 4. Run the workflow actions in order: eligibility, application, status, and unlock code.
 5. In **Gain temp root**, select the installed device version and press **Run root helper**.
 6. Press **Check requirements** to confirm that root access and the unlock code are ready.
