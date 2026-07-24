@@ -1322,7 +1322,7 @@ class DeepTestingApp(tk.Tk):
             try:
                 proc = subprocess.run(
                     [sys.executable, *args], text=True, capture_output=True, timeout=330,
-                    env={**os.environ, "PYTHONUNBUFFERED": "1"}
+                    env={**os.environ, "PYTHONUNBUFFERED": "1", "PYTHONIOENCODING": "utf-8"}
                 )
                 text = (proc.stdout + proc.stderr).strip()
                 self.after(0, self._finished, proc.returncode, text)
