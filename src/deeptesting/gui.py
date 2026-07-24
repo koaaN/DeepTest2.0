@@ -1100,14 +1100,25 @@ class DeepTestingApp(tk.Tk):
             return
         model = getattr(device, "model", "Android device")
         serial = getattr(device, "serial", "")
+        self._helper_device_model = model
+        self._helper_device_serial = serial
         rooted = bool(getattr(device, "rooted", False))
         code_status = "Unlock code ready" if self.last_unlock_code else "run Check status to load code"
         root_status = "root ready" if rooted else "root permission missing"
         color = self.SUCCESS if rooted and self.last_unlock_code else self.WARNING
-        self.helper_readiness.configure(
-            text=f"{model} ({serial})  •  {root_status}  •  {code_status}",
-            fg=color,
-        )
+        self._helper_readiness_root = root_status
+        self._helper_readiness_code = code_status
+        self._helper_readiness_color = color
+        self._render_helper_readiness()
+
+    def _render_helper_readiness(self) -> None:
+        model = getattr(self, "_helper_device_model", "Android device")
+        serial = getattr(self, "_helper_device_serial", "")
+        shown = serial if self._show_sensitive else ("*" * len(serial) if serial else "unknown")
+        root_status = getattr(self, "_helper_readiness_root", "")
+        code_status = getattr(self, "_helper_readiness_code", "")
+        if root_status and code_status:
+            self.helper_readiness.configure(text=f"{model} ({shown})  •  {root_status}  •  {code_status}", fg=self._helper_readiness_color)
 
     def _apply_unlock_authorization(self) -> None:
         if not self.last_unlock_code:
@@ -1296,6 +1307,7 @@ class DeepTestingApp(tk.Tk):
         if hasattr(self, "_chip_entry"):
             self._chip_entry.configure(show="" if self._show_sensitive else "•")
         self._render_connected_device()
+        self._render_helper_readiness()
 
     def _toggle_chip_visibility(self, entry: ttk.Entry) -> None:
         entry.configure(show="" if entry.cget("show") else "•")
