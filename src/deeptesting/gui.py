@@ -478,8 +478,12 @@ class DeepTestingApp(tk.Tk):
         root_card = self._card(content, "Gain temp root", "Run the local completion script and verify the current root state.")
         root_card.columnconfigure(1, weight=1)
         self.root_status = tk.Label(root_card, text="Ready", bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 9))
-        self._button(root_card, "Run root helper  →", self._run_root_helper, primary=True).grid(row=0, column=0, sticky="w")
-        self.root_status.grid(row=0, column=1, sticky="w", padx=(14, 2), pady=4)
+        self._button(root_card, "Run root helper  →", self._run_root_helper, primary=True).grid(row=0, column=1, sticky="w", padx=(8, 0))
+        self.root_status.grid(row=0, column=2, sticky="w", padx=(14, 2), pady=4)
+        self.root_version = tk.StringVar(value="No version available")
+        self.root_version_menu = ttk.Combobox(root_card, textvariable=self.root_version,
+            values=("No version available",), state="disabled", width=14, style="Modern.TCombobox")
+        self.root_version_menu.grid(row=0, column=0, sticky="w")
 
         helper = self._card(
             content,
@@ -534,9 +538,11 @@ class DeepTestingApp(tk.Tk):
         self.root_status.configure(text="Running…", fg=self.WARNING)
         self._append("$ root helper started…\n")
         self.update_idletasks()
-        target_folder = "ACE6T" if str(self.vars["model"].get()).upper() == "PLR110" else "OP15"
+        _, _, _, prj_id = getattr(self, "_connected_device_info", ("", "", "", ""))
+        target_folder = {"24831": "OP15", "24855": "ACE6T"}.get(prj_id, "OP15")
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
-        script_dir = bundle_root / "android-helper" / "assets" / target_folder
+        version = self.root_version.get()
+        script_dir = bundle_root / "android-helper" / "assets" / target_folder / version
         script = script_dir / ("root.bat" if os.name == "nt" else "root.sh")
 
         def worker() -> None:
@@ -1250,20 +1256,12 @@ class DeepTestingApp(tk.Tk):
                 capture_output=True, text=True, timeout=10,
             )
             ota = ota_result.stdout.strip()
-            try:
-                display_result = subprocess.run(
-                    [adb, "-s", serial, "shell", "getprop", "ro.build.display.id"],
-                    capture_output=True, text=True, timeout=10,
-                )
-                display_id = display_result.stdout.strip()
-            except (OSError, subprocess.TimeoutExpired):
-                display_id = ""
-            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota, display_id)
+            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota)
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _connected_device_updated(
-        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = "", display_id: str = ""
+        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = ""
     ) -> None:
         if error:
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
@@ -1273,7 +1271,7 @@ class DeepTestingApp(tk.Tk):
             target_name = "OnePlus 15"
         elif prj_id == "24855":
             target_name = "OnePlus Ace 6T"
-        self._connected_device_info = (target_name, model, serial, prj_id, display_id)
+        self._connected_device_info = (target_name, model, serial, prj_id)
         self._render_connected_device()
         if prj_id == "24831":
             self.vars["model"].set("PLK110")
@@ -1285,6 +1283,7 @@ class DeepTestingApp(tk.Tk):
             self.vars["model"].set("PLR110")
             self.vars["ota_version"].set("PLR110_11.A.62_0620_202606152334")
             self._save_settings()
+        self._set_root_versions({"24831": "OP15", "24855": "ACE6T"}.get(prj_id, "OP15"))
 
     def _toggle_device_ids(self) -> None:
         self._show_sensitive = not self._show_sensitive
@@ -1301,10 +1300,20 @@ class DeepTestingApp(tk.Tk):
         entry.configure(show="" if entry.cget("show") else "•")
 
     def _render_connected_device(self) -> None:
-        target_name, model, serial, prj_id, display_id = getattr(self, "_connected_device_info", ("Android device", "", "", "", ""))
+        target_name, model, serial, prj_id = getattr(self, "_connected_device_info", ("Android device", "", "", ""))
         shown_serial = serial if self._show_sensitive else ("*" * len(serial) if serial else "unknown")
-        build_line = f"\nBuild: {display_id}" if display_id else ""
-        self.connected_device_status.configure(text=f"●  {target_name}\n{model}\n{shown_serial}\nPRJ-ID: {prj_id or 'unknown'}{build_line}", fg=self.SUCCESS)
+        self.connected_device_status.configure(text=f"●  {target_name}\n{model}\n{shown_serial}\nPRJ-ID: {prj_id or 'unknown'}", fg=self.SUCCESS)
+
+    def _set_root_versions(self, folder: str) -> None:
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
+        root = bundle_root / "android-helper" / "assets" / folder
+        versions = sorted(path.name for path in root.iterdir() if path.is_dir()) if root.is_dir() else []
+        if versions:
+            self.root_version_menu.configure(values=versions, state="readonly")
+            self.root_version.set(versions[0])
+        else:
+            self.root_version_menu.configure(values=("No version available",), state="disabled")
+            self.root_version.set("No version available")
     def _chip_id_detected(self, value: str) -> None:
         self.vars["chip_id"].set(value)
         self._save_settings()
