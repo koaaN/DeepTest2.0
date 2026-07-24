@@ -56,7 +56,12 @@ def helper_jar_path() -> Path:
 
 
 def _adb_path() -> str:
-    adb = shutil.which("adb")
+    candidates = []
+    bundle_root = Path(getattr(__import__("sys"), "_MEIPASS", Path(__file__).resolve().parents[2]))
+    candidates.extend((bundle_root / "platform-tools" / name for name in ("adb", "adb.exe")))
+    candidates.extend((Path.cwd() / "platform-tools" / name for name in ("adb", "adb.exe")))
+    candidates.extend((Path(item) for item in (shutil.which("adb"), shutil.which("adb.exe")) if item))
+    adb = next((str(path) for path in candidates if path.is_file()), None)
     if not adb:
         raise UnlockHelperError("ADB is not installed or is not available in PATH.")
     return adb

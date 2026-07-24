@@ -24,6 +24,12 @@ jobs:
           pip install -e .
           pip install pyinstaller
 
+      - name: Download Android Platform Tools
+        shell: pwsh
+        run: |
+          Invoke-WebRequest https://dl.google.com/android/repository/platform-tools-latest-windows.zip -OutFile platform-tools.zip
+          Expand-Archive platform-tools.zip -DestinationPath .
+
       - name: Build executable
         shell: pwsh
         run: >-
@@ -31,6 +37,7 @@ jobs:
           --name DeepTest2
           --add-data "android-helper\assets;android-helper\assets"
           --add-data "src\deeptesting\assets;deeptesting\assets"
+          --add-data "platform-tools;platform-tools"
           --paths src launcher.py
 
       - name: Package artifact
