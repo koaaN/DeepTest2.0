@@ -1264,6 +1264,7 @@ class DeepTestingApp(tk.Tk):
         self, model: str, serial: str, error: str, prj_id: str = "", ota: str = ""
     ) -> None:
         if error:
+            self._connected_device_info = ("Android device", "", "", "")
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
             return
         target_name = model
