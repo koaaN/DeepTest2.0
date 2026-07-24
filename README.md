@@ -46,7 +46,9 @@ The Connected Device card shows the live ADB connection. Saved target-device fie
 2. Continue to **Device & unlock**.
 3. Confirm the detected model, PRJ-ID, OTA version, and chip ID.
 4. Run the workflow actions in order: eligibility, application, status, and unlock code.
-5. Use **Install unlock authorization** only after checking the target device and confirming the backup location.
+5. In **Gain temp root**, select the installed device version and press **Run root helper**.
+6. Press **Check requirements** to confirm that root access and the unlock code are ready.
+7. Use **Install unlock authorization** only after checking the target device and confirming the backup location.
 
 The application creates a local `oplusreserve1` backup before applying an authorization. Review the Technical Log after each operation.
 
