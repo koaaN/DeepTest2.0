@@ -480,6 +480,13 @@ class DeepTestingApp(tk.Tk):
         self.root_status = tk.Label(root_card, text="Ready", bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 9))
         self._button(root_card, "Run root helper  →", self._run_root_helper, primary=True).grid(row=0, column=0, sticky="w")
         self.root_status.grid(row=0, column=1, sticky="w", padx=(14, 2), pady=4)
+        self.root_version = tk.StringVar(value="Auto-detected")
+        self.root_version_menu = ttk.Combobox(
+            root_card, textvariable=self.root_version,
+            values=("Auto-detected", "16.0.8.300", "16.0.9.400"),
+            state="disabled", width=14, style="Modern.TCombobox"
+        )
+        self.root_version_menu.grid(row=1, column=0, sticky="w", pady=(10, 0))
 
         helper = self._card(
             content,
@@ -535,6 +542,9 @@ class DeepTestingApp(tk.Tk):
         self._append("$ root helper started…\n")
         self.update_idletasks()
         target_folder = "ACE6T" if str(self.vars["model"].get()).upper() == "PLR110" else "OP15"
+        selected_version = self.root_version.get()
+        if selected_version != "Auto-detected":
+            target_folder = f"{target_folder}/{selected_version}"
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
         script_dir = bundle_root / "android-helper" / "assets" / target_folder
         script = script_dir / ("root.bat" if os.name == "nt" else "root.sh")
@@ -1258,12 +1268,14 @@ class DeepTestingApp(tk.Tk):
                 display_id = display_result.stdout.strip()
             except (OSError, subprocess.TimeoutExpired):
                 display_id = ""
-            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota, display_id)
+            match = re.search(r"_(\d+\.\d+\.\d+)", display_id)
+            version = match.group(1) if match else ""
+            self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota, display_id, version)
 
         threading.Thread(target=worker, daemon=True).start()
 
     def _connected_device_updated(
-        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = "", display_id: str = ""
+        self, model: str, serial: str, error: str, prj_id: str = "", ota: str = "", display_id: str = "", version: str = ""
     ) -> None:
         if error:
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
@@ -1275,6 +1287,12 @@ class DeepTestingApp(tk.Tk):
             target_name = "OnePlus Ace 6T"
         self._connected_device_info = (target_name, model, serial, prj_id, display_id)
         self._render_connected_device()
+        if version:
+            self.root_version.set(version)
+            self.root_version_menu.configure(state="disabled")
+        else:
+            self.root_version.set("Auto-detected")
+            self.root_version_menu.configure(state="readonly")
         if prj_id == "24831":
             self.vars["model"].set("PLK110")
             # The custom ROM may report a CPH/Project-Infinity build OTA string;
