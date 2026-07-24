@@ -37,7 +37,6 @@ The Windows release includes Platform Tools and `adb.exe`. The Linux release use
 - Enable USB debugging.
 - Accept the RSA authorization prompt on the phone.
 - Keep only the intended device connected.
-- Grant root access where the workflow requires it.
 
 The Connected Device card shows the live ADB connection. Saved target-device fields may remain visible between launches and do not prove that a phone is connected.
 
