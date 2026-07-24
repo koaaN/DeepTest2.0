@@ -1248,21 +1248,18 @@ class DeepTestingApp(tk.Tk):
                 for key, value in (item.split(":", 1),)
             }
             model = properties.get("model") or properties.get("product") or "Android device"
-            prop_result = subprocess.run(
-                [adb, "-s", serial, "shell", "getprop", "ro.boot.prjname"],
-                capture_output=True, text=True, timeout=10,
-            )
-            prj_id = prop_result.stdout.strip()
-            ota_result = subprocess.run(
-                [adb, "-s", serial, "shell", "getprop", "ro.build.version.ota"],
-                capture_output=True, text=True, timeout=10,
-            )
-            ota = ota_result.stdout.strip()
-            display_result = subprocess.run(
-                [adb, "-s", serial, "shell", "getprop", "ro.build.display.id"],
-                capture_output=True, text=True, timeout=10,
-            )
-            display_id = display_result.stdout.strip()
+            prj_id = ota = display_id = ""
+            try:
+                props = subprocess.run(
+                    [adb, "-s", serial, "shell", "getprop"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                prop_map = dict(re.findall(r"\[([^]]+)\]: \[([^]]*)\]", props.stdout))
+                prj_id = prop_map.get("ro.boot.prjname", "")
+                ota = prop_map.get("ro.build.version.ota", "")
+                display_id = prop_map.get("ro.build.display.id", "")
+            except (OSError, subprocess.TimeoutExpired):
+                pass
             version_match = re.search(r"_(\d+\.\d+\.\d+)", display_id)
             version = version_match.group(1) if version_match else ""
             self.after(0, self._connected_device_updated, model, serial, "", prj_id, ota, version)
@@ -1276,7 +1273,7 @@ class DeepTestingApp(tk.Tk):
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
             return
         target_name = model
-        if prj_id == "24831":
+        if prj_id == "24831" or (not prj_id and model.upper() == "PLK110"):
             target_name = "OnePlus 15"
         elif prj_id == "24855":
             target_name = "OnePlus Ace 6T"
@@ -1288,7 +1285,7 @@ class DeepTestingApp(tk.Tk):
         else:
             self.root_version.set("Auto-detected")
             self.root_version_menu.configure(state="readonly")
-        if prj_id == "24831":
+        if prj_id == "24831" or (not prj_id and model.upper() == "PLK110"):
             self.vars["model"].set("PLK110")
             # The custom ROM may report a CPH/Project-Infinity build OTA string;
             # DeepTest must submit the PLK110 target firmware identifier.
