@@ -1,43 +1,66 @@
 # DeepTest 2.0
 
-DeepTest 2.0 is a desktop GUI for managing OnePlus/HeyTap DeepTesting authorization workflows. It is designed to replace terminal-heavy commands with a clearer, guided interface.
+DeepTest 2.0 is a desktop GUI for OnePlus/HeyTap DeepTesting workflows. It replaces terminal-heavy commands with a guided interface for login, device detection, authorization, diagnostics, and unlock-code management.
 
-This project is an independent GUI built on the protocol implementation and research from [mikoker/deeptest](https://github.com/mikoker/deeptest). See the upstream project for protocol background and licensing information.
+This is an independent GUI built on the protocol implementation and research from [mikoker/deeptest](https://github.com/mikoker/deeptest). Please review the upstream project’s license and documentation.
 
-## What it does
+## Download a ready-to-run release
 
-- HeyTap account login and token management
-- Device detection through ADB
-- Automatic PRJ-ID mapping for OnePlus 15 (`24831`) and OnePlus Ace 6T (`24855`)
-- Device profile and OTA-version configuration
-- Eligibility, application, status, and unlock-code workflows
-- Backup-first `oplusreserve1` authorization installation
-- Technical log with command output and operation results
-- Scrollable dark-themed interface with sensitive-value masking
+Open the repository’s [Releases](https://github.com/koaaN/DeepTest2.0/releases) page and download the archive for your operating system.
 
-## Linux release
+### Linux
 
-Download the latest release archive, extract it, and run:
+1. Download `DeepTest2-linux-x86_64.tar.gz`.
+2. Extract it:
 
-```bash
-./DeepTest2/DeepTest2
+   ```bash
+   tar -xzf DeepTest2-linux-x86_64.tar.gz
+   ```
+
+3. Start the application:
+
+   ```bash
+   ./DeepTest2/DeepTest2
+   ```
+
+### Windows
+
+1. Download `DeepTest2-windows.zip`.
+2. Extract the ZIP file.
+3. Open the extracted `DeepTest2` folder.
+4. Double-click `DeepTest2.exe`.
+
+The Windows release includes Platform Tools and `adb.exe`. The Linux release uses system ADB when available; install Android Platform Tools if ADB is not already on your `PATH`.
+
+## Before connecting a phone
+
+- Enable USB debugging.
+- Accept the RSA authorization prompt on the phone.
+- Keep only the intended device connected.
+- Grant root access where the workflow requires it.
+
+The Connected Device card shows the live ADB connection. Saved target-device fields may remain visible between launches and do not prove that a phone is connected.
+
+## Main workflow
+
+1. Open **Account Login** and sign in with HeyTap.
+2. Continue to **Device & unlock**.
+3. Confirm the detected model, PRJ-ID, OTA version, and chip ID.
+4. Run the workflow actions in order: eligibility, application, status, and unlock code.
+5. Use **Install unlock authorization** only after checking the target device and confirming the backup location.
+
+The application creates a local `oplusreserve1` backup before applying an authorization. Review the Technical Log after each operation.
+
+## Token storage
+
+Login and authorization data is stored locally under:
+
+```text
+~/.config/deeptesting/
 ```
 
-The bundle includes its Python runtime and GUI assets. ADB must still be installed and available in `PATH` for phone communication. USB debugging must be enabled and the device authorized.
+Treat these JSON files as secrets and never upload them. Device settings are also local and are not sent to the repository.
 
-## Windows build
+## Building from source
 
-The repository builds Windows packages automatically with GitHub Actions. Open the **Actions** tab, run **Windows build**, and download the `DeepTest2-Windows` artifact. Android Platform Tools (`adb.exe`) is still required for phone communication.
-
-## Source setup
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-./launch-deeptesting.sh
-```
-
-## Security notes
-
-Token caches are stored locally under `~/.config/deeptesting/`. Treat them as secrets. Reserve-partition operations are explicit and create a local backup before writing. Review the target device and backup path before applying authorization.
+The repository includes separate GitHub Actions workflows for Linux and Windows, plus a combined release workflow. Maintainers can run them from the **Actions** tab or trigger the release workflow with a `v*` tag.
