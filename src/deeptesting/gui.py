@@ -1301,6 +1301,9 @@ class DeepTestingApp(tk.Tk):
 
     def _render_connected_device(self) -> None:
         target_name, model, serial, prj_id = getattr(self, "_connected_device_info", ("Android device", "", "", ""))
+        if not serial:
+            self.connected_device_status.configure(text="○  No authorized device", fg=self.WARNING)
+            return
         shown_serial = serial if self._show_sensitive else ("*" * len(serial) if serial else "unknown")
         self.connected_device_status.configure(text=f"●  {target_name}\n{model}\n{shown_serial}\nPRJ-ID: {prj_id or 'unknown'}", fg=self.SUCCESS)
 
