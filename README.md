@@ -27,7 +27,7 @@ The bundle includes its Python runtime and GUI assets. ADB must still be install
 
 ## Windows build
 
-Install Python 3.10 or newer, Android Platform Tools, and run `build_windows.bat`. The script creates `dist\\DeepTest2\\DeepTest2.exe` using PyInstaller.
+The repository builds Windows packages automatically with GitHub Actions. Open the **Actions** tab, run **Windows build**, and download the `DeepTest2-Windows` artifact. Android Platform Tools (`adb.exe`) is still required for phone communication.
 
 ## Source setup
 
