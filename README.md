@@ -57,7 +57,8 @@ The application creates a local `oplusreserve1` backup before applying an author
 Login and authorization data is stored locally under:
 
 ```text
-~/.config/deeptesting/
+Linux:   /home/<user>/.config/deeptesting/
+Windows: C:\Users\<user>\.config\deeptesting\
 ```
 
 Treat these JSON files as secrets and never upload them. Device settings are also local and are not sent to the repository.
