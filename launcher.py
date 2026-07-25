@@ -13,7 +13,7 @@ if len(sys.argv) >= 3 and sys.argv[1] == "-m" and sys.argv[2] in {"deeptesting.c
         from deeptesting.cli import main
     sys.argv = [sys.argv[2], *sys.argv[3:]]
 else:
-    from deeptesting.gui import main
+    from deeptesting.web_gui import main
 
 if __name__ == "__main__":
     raise SystemExit(main())

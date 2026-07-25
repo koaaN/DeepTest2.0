@@ -9,6 +9,7 @@ import threading
 import tkinter as tk
 import uuid
 import webbrowser
+import customtkinter as ctk
 from datetime import datetime
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
@@ -29,25 +30,33 @@ SETTINGS_PATH = APP_DIR / "gui-settings.json"
 TOKEN_PATH = APP_DIR / "auth.json"
 
 
-class DeepTestingApp(tk.Tk):
-    BG = "#0b1020"
-    SIDEBAR = "#10182b"
-    SURFACE = "#151f34"
-    SURFACE_2 = "#1b2841"
-    BORDER = "#293a58"
-    TEXT = "#f4f7fb"
-    MUTED = "#91a0b8"
-    ACCENT = "#6c7cff"
-    ACCENT_HOVER = "#7e8cff"
-    SUCCESS = "#45d483"
-    WARNING = "#ffbd5c"
-    DANGER = "#ff6b7a"
+class DeepTestingApp(ctk.CTk):
+    BG = "#080b12"
+    SIDEBAR = "#0d111b"
+    SURFACE = "#121824"
+    SURFACE_2 = "#192131"
+    SURFACE_3 = "#202a3d"
+    BORDER = "#2a3549"
+    BORDER_SOFT = "#1d2635"
+    TEXT = "#f7f9fc"
+    MUTED = "#93a1b5"
+    DIM = "#647289"
+    ACCENT = "#7c6cff"
+    ACCENT_HOVER = "#9184ff"
+    ACCENT_SOFT = "#242342"
+    SUCCESS = "#3ddc97"
+    SUCCESS_SOFT = "#17372f"
+    WARNING = "#f6bd60"
+    WARNING_SOFT = "#3a3020"
+    DANGER = "#ff667d"
 
     def __init__(self) -> None:
+        ctk.set_appearance_mode("dark")
+        ctk.set_default_color_theme("blue")
         super().__init__()
         self.title("DeepTest 2.0")
-        self.geometry("1120x760")
-        self.minsize(940, 650)
+        self.geometry("1280x820")
+        self.minsize(1040, 700)
         self.configure(bg=self.BG)
         self.busy = False
         self.active_operation = ""
@@ -114,13 +123,18 @@ class DeepTestingApp(tk.Tk):
         style.configure(
             "Modern.TEntry", fieldbackground=self.SURFACE_2, foreground=self.TEXT,
             insertcolor=self.TEXT, bordercolor=self.BORDER, lightcolor=self.BORDER,
-            darkcolor=self.BORDER, padding=(12, 9)
+            darkcolor=self.BORDER, padding=(13, 10), relief="flat"
         )
-        style.map("Modern.TEntry", bordercolor=[("focus", self.ACCENT)])
+        style.map(
+            "Modern.TEntry",
+            bordercolor=[("focus", self.ACCENT)],
+            lightcolor=[("focus", self.ACCENT)],
+            darkcolor=[("focus", self.ACCENT)],
+        )
         style.configure(
             "Modern.TCombobox", fieldbackground=self.SURFACE_2, background=self.SURFACE_2,
             foreground=self.TEXT, arrowcolor=self.MUTED, bordercolor=self.BORDER,
-            lightcolor=self.BORDER, darkcolor=self.BORDER, padding=(10, 8)
+            lightcolor=self.BORDER, darkcolor=self.BORDER, padding=(12, 9), relief="flat"
         )
         style.map(
             "Modern.TCombobox",
@@ -130,94 +144,131 @@ class DeepTestingApp(tk.Tk):
         )
         style.configure(
             "Modern.Horizontal.TProgressbar", troughcolor=self.SURFACE,
-            background=self.ACCENT, borderwidth=0, thickness=3
+            background=self.ACCENT, borderwidth=0, thickness=2
+        )
+        style.configure(
+            "Vertical.TScrollbar", background=self.SURFACE_2, troughcolor=self.BG,
+            bordercolor=self.BG, arrowcolor=self.MUTED, relief="flat", width=10,
         )
 
     def _build(self) -> None:
         shell = tk.Frame(self, bg=self.BG)
         shell.pack(fill="both", expand=True)
 
-        sidebar = tk.Frame(shell, bg=self.SIDEBAR, width=238)
-        sidebar.pack(side="left", fill="y")
-        sidebar.pack_propagate(False)
-        brand = tk.Frame(sidebar, bg=self.SIDEBAR)
-        brand.pack(fill="x", padx=24, pady=(28, 36))
-        tk.Label(
-            brand, text="D2", width=2, height=1, bg=self.ACCENT, fg="white",
-            font=("DejaVu Sans", 18, "bold")
-        ).pack(side="left")
-        brand_text = tk.Frame(brand, bg=self.SIDEBAR)
-        brand_text.pack(side="left", padx=11)
-        tk.Label(
-            brand_text, text="DEEPTEST 2.0", bg=self.SIDEBAR, fg=self.TEXT,
-            font=("DejaVu Sans", 11, "bold")
-        ).pack(anchor="w")
-        tk.Label(
-            brand_text, text="ONEPLUS UNLOCK CLIENT", bg=self.SIDEBAR, fg=self.MUTED,
-            font=("DejaVu Sans", 7)
-        ).pack(anchor="w")
+        header = tk.Frame(
+            shell, bg=self.SIDEBAR, height=76,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        header.pack(side="top", fill="x")
+        header.pack_propagate(False)
 
+        brand = tk.Frame(header, bg=self.SIDEBAR)
+        brand.pack(side="left", padx=(26, 34), pady=16)
         tk.Label(
-            sidebar, text="WORKSPACE", bg=self.SIDEBAR, fg="#60708c",
-            font=("DejaVu Sans", 8, "bold")
-        ).pack(anchor="w", padx=25, pady=(0, 8))
-        for key, icon, text in (
-            ("account", "1", "Account Login"),
-            ("device", "2", "Device & unlock"),
-            ("activity", "≡", "Technical log"),
+            brand, text="D2", width=3, bg=self.ACCENT, fg="white",
+            font=("DejaVu Sans", 15, "bold"), pady=7,
+        ).pack(side="left")
+        brand_copy = tk.Frame(brand, bg=self.SIDEBAR)
+        brand_copy.pack(side="left", padx=11)
+        tk.Label(
+            brand_copy, text="DeepTest 2.0", bg=self.SIDEBAR, fg=self.TEXT,
+            font=("DejaVu Sans", 12, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            brand_copy, text="Unlock workspace", bg=self.SIDEBAR, fg=self.DIM,
+            font=("DejaVu Sans", 8),
+        ).pack(anchor="w", pady=(2, 0))
+
+        navigation = tk.Frame(header, bg=self.SIDEBAR)
+        navigation.pack(side="left", fill="y")
+        for key, number, text in (
+            ("account", "1", "Account"),
+            ("device", "2", "Unlock device"),
+            ("activity", "3", "Technical log"),
         ):
-            button = tk.Button(
-                sidebar, text=f"  {icon}    {text}", anchor="w", bd=0, relief="flat",
-                bg=self.SIDEBAR, fg=self.MUTED, activebackground=self.SURFACE_2,
-                activeforeground=self.TEXT, font=("DejaVu Sans", 10),
-                padx=18, pady=13, cursor="hand2", command=lambda page=key: self._show_page(page)
+            button = ctk.CTkButton(
+                navigation, text=f"{number}   {text}", fg_color="transparent",
+                hover_color=self.SURFACE, text_color=self.MUTED,
+                font=("DejaVu Sans", 9, "bold"), height=46, corner_radius=11,
+                command=lambda page=key: self._show_page(page),
             )
-            button.pack(fill="x", padx=10, pady=2)
+            button.pack(side="left", fill="y", padx=1)
             self.nav_buttons[key] = button
 
-        token_card = tk.Frame(sidebar, bg=self.SURFACE, highlightthickness=1, highlightbackground=self.BORDER)
-        token_card.pack(side="bottom", fill="x", padx=16, pady=18)
-        tk.Label(
-            token_card, text="AUTHORIZATION", bg=self.SURFACE, fg=self.MUTED,
-            font=("DejaVu Sans", 8, "bold")
-        ).pack(anchor="w", padx=14, pady=(13, 4))
-        self.token_status = tk.Label(
-            token_card, text="Checking…", bg=self.SURFACE, fg=self.WARNING,
-            font=("DejaVu Sans", 9), justify="left", wraplength=180
+        header_tools = tk.Frame(header, bg=self.SIDEBAR)
+        header_tools.pack(side="right", fill="y", padx=20)
+        self._show_sensitive = False
+        self.sensitive_button = ctk.CTkButton(
+            header_tools, text="◉  Show sensitive values",
+            command=self._toggle_sensitive, fg_color=self.SURFACE,
+            hover_color=self.SURFACE_2, text_color=self.MUTED,
+            font=("DejaVu Sans", 8, "bold"), height=36, corner_radius=10,
         )
-        self.token_status.pack(anchor="w", padx=14, pady=(0, 14))
+        self.sensitive_button.pack(side="right", pady=20)
 
-        device_card = tk.Frame(
-            sidebar, bg=self.SURFACE, highlightthickness=1, highlightbackground=self.BORDER
+        livebar = tk.Frame(
+            shell, bg=self.SURFACE, height=70,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
         )
-        device_card.pack(side="bottom", fill="x", padx=16, pady=(0, 0))
-        device_heading = tk.Frame(device_card, bg=self.SURFACE)
-        device_heading.pack(fill="x", padx=14, pady=(12, 2))
+        livebar.pack(side="top", fill="x")
+        livebar.pack_propagate(False)
+
+        device_summary = tk.Frame(livebar, bg=self.SURFACE)
+        device_summary.pack(side="left", fill="both", expand=True, padx=(28, 12), pady=12)
+        device_head = tk.Frame(device_summary, bg=self.SURFACE)
+        device_head.pack(anchor="w")
         tk.Label(
-            device_heading, text="CONNECTED DEVICE", bg=self.SURFACE, fg=self.MUTED,
-            font=("DejaVu Sans", 8, "bold")
+            device_head, text="LIVE DEVICE", bg=self.SURFACE, fg=self.DIM,
+            font=("DejaVu Sans", 7, "bold"),
         ).pack(side="left")
-        refresh = tk.Button(
-            device_heading, text="↻", command=self._refresh_connected_device,
-            bd=0, relief="flat", bg=self.SURFACE, fg=self.MUTED,
-            activebackground=self.SURFACE_2, activeforeground=self.TEXT,
-            font=("DejaVu Sans", 11, "bold"), cursor="hand2", padx=4, pady=0
-        )
-        refresh.pack(side="right")
+        ctk.CTkButton(
+            device_head, text="↻", command=self._refresh_connected_device,
+            fg_color="transparent", hover_color=self.SURFACE_2, text_color=self.MUTED,
+            font=("DejaVu Sans", 11, "bold"), width=30, height=25, corner_radius=8,
+        ).pack(side="left")
         self._show_device_ids = False
         self.connected_device_status = tk.Label(
-            device_card, text="○  Checking ADB…", bg=self.SURFACE, fg=self.WARNING,
-            font=("DejaVu Sans", 9), justify="left", anchor="w", wraplength=180
+            device_summary, text="○  Checking ADB…", bg=self.SURFACE,
+            fg=self.WARNING, font=("DejaVu Sans", 9), justify="left", anchor="w",
         )
-        self.connected_device_status.pack(fill="x", padx=14, pady=(4, 13))
+        self.connected_device_status.pack(anchor="w", pady=(3, 0))
+
+        divider = tk.Frame(livebar, bg=self.BORDER, width=1)
+        divider.pack(side="left", fill="y", pady=12)
+        auth_summary = tk.Frame(livebar, bg=self.SURFACE, width=280)
+        auth_summary.pack(side="right", fill="y", padx=28, pady=12)
+        auth_summary.pack_propagate(False)
+        tk.Label(
+            auth_summary, text="ACCOUNT AUTHORIZATION", bg=self.SURFACE, fg=self.DIM,
+            font=("DejaVu Sans", 7, "bold"),
+        ).pack(anchor="w")
+        self.token_status = tk.Label(
+            auth_summary, text="Checking…", bg=self.SURFACE, fg=self.WARNING,
+            font=("DejaVu Sans", 9), justify="left", anchor="w",
+        )
+        self.token_status.pack(anchor="w", pady=(4, 0))
 
         main = tk.Frame(shell, bg=self.BG)
-        main.pack(side="left", fill="both", expand=True)
-        self._show_sensitive = False
-        self.sensitive_button = tk.Button(main, text="Show critical information", command=self._toggle_sensitive,
-            bd=0, relief="flat", bg=self.SURFACE_2, fg=self.TEXT, activebackground=self.BORDER,
-            font=("DejaVu Sans", 8, "bold"), cursor="hand2", padx=10, pady=5)
-        self.sensitive_button.pack(anchor="ne", padx=18, pady=(8, 0))
+        main.pack(fill="both", expand=True)
+        footer = tk.Frame(main, bg=self.SIDEBAR, height=42)
+        footer.pack(side="bottom", fill="x")
+        footer.pack_propagate(False)
+        self.status_dot = tk.Label(
+            footer, text="●", bg=self.SIDEBAR, fg=self.SUCCESS,
+            font=("DejaVu Sans", 9),
+        )
+        self.status_dot.pack(side="left", padx=(24, 8))
+        self.status = tk.Label(
+            footer, text="Ready", bg=self.SIDEBAR, fg=self.MUTED,
+            font=("DejaVu Sans", 9),
+        )
+        self.status.pack(side="left")
+        self.progress = ttk.Progressbar(
+            footer, mode="indeterminate",
+            style="Modern.Horizontal.TProgressbar", length=150,
+        )
+        self.progress.pack(side="right", padx=24)
+
         self.page_host = tk.Frame(main, bg=self.BG)
         self.page_host.pack(fill="both", expand=True)
         for key in ("account", "device", "activity"):
@@ -225,23 +276,9 @@ class DeepTestingApp(tk.Tk):
             page.place(relx=0, rely=0, relwidth=1, relheight=1)
             self.pages[key] = page
         self._build_account(self.pages["account"])
-        self._build_device(self.pages["device"])
+        self._build_device_wizard(self.pages["device"])
         self._build_output(self.pages["activity"])
         self._install_scroll_bindings()
-
-        footer = tk.Frame(main, bg=self.SIDEBAR, height=46)
-        footer.pack(side="bottom", fill="x")
-        footer.pack_propagate(False)
-        self.status_dot = tk.Label(footer, text="●", bg=self.SIDEBAR, fg=self.SUCCESS, font=("DejaVu Sans", 9))
-        self.status_dot.pack(side="left", padx=(22, 7))
-        self.status = tk.Label(
-            footer, text="Ready", bg=self.SIDEBAR, fg=self.MUTED, font=("DejaVu Sans", 9)
-        )
-        self.status.pack(side="left")
-        self.progress = ttk.Progressbar(
-            footer, mode="indeterminate", style="Modern.Horizontal.TProgressbar", length=130
-        )
-        self.progress.pack(side="right", padx=22)
         self._show_page("account")
 
     def _show_page(self, key: str) -> None:
@@ -250,9 +287,8 @@ class DeepTestingApp(tk.Tk):
         for name, button in self.nav_buttons.items():
             active = name == key
             button.configure(
-                bg=self.SURFACE_2 if active else self.SIDEBAR,
-                fg=self.TEXT if active else self.MUTED,
-                font=("DejaVu Sans", 10, "bold" if active else "normal"),
+                fg_color=self.ACCENT if active else "transparent",
+                text_color=self.TEXT if active else self.MUTED,
             )
 
     def _scroll_page(self, parent: tk.Frame, key: str) -> tk.Frame:
@@ -296,135 +332,629 @@ class DeepTestingApp(tk.Tk):
         return "break"
 
     def _page_header(self, parent: tk.Frame, eyebrow: str, title: str, description: str) -> None:
+        meta = tk.Frame(parent, bg=self.BG)
+        meta.pack(fill="x")
         tk.Label(
-            parent, text=eyebrow.upper(), bg=self.BG, fg=self.ACCENT,
-            font=("DejaVu Sans", 8, "bold")
-        ).pack(anchor="w")
+            meta, text=eyebrow.upper(), bg=self.ACCENT_SOFT, fg="#b9b2ff",
+            font=("DejaVu Sans", 8, "bold"), padx=10, pady=4,
+        ).pack(side="left")
         tk.Label(
             parent, text=title, bg=self.BG, fg=self.TEXT,
-            font=("DejaVu Sans", 25, "bold")
-        ).pack(anchor="w", pady=(5, 4))
+            font=("DejaVu Sans", 28, "bold")
+        ).pack(anchor="w", pady=(12, 5))
         tk.Label(
             parent, text=description, bg=self.BG, fg=self.MUTED,
-            font=("DejaVu Sans", 10)
-        ).pack(anchor="w", pady=(0, 22))
+            font=("DejaVu Sans", 10), justify="left",
+        ).pack(anchor="w", pady=(0, 24))
 
     def _card(self, parent: tk.Frame, title: str, subtitle: str = "") -> tk.Frame:
-        outer = tk.Frame(parent, bg=self.SURFACE, highlightthickness=1, highlightbackground=self.BORDER)
-        outer.pack(fill="x", pady=(0, 16))
+        outer = tk.Frame(
+            parent, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        outer.pack(fill="x", pady=(0, 18))
         heading = tk.Frame(outer, bg=self.SURFACE)
-        heading.pack(fill="x", padx=22, pady=(18, 13))
+        heading.pack(fill="x", padx=22, pady=(19, 14))
+        tk.Frame(heading, bg=self.ACCENT, width=3, height=34).pack(side="left", padx=(0, 12))
         tk.Label(
             heading, text=title, bg=self.SURFACE, fg=self.TEXT,
-            font=("DejaVu Sans", 12, "bold")
+            font=("DejaVu Sans", 12, "bold"),
         ).pack(anchor="w")
         if subtitle:
             tk.Label(
                 heading, text=subtitle, bg=self.SURFACE, fg=self.MUTED,
-                font=("DejaVu Sans", 9)
+                font=("DejaVu Sans", 9), justify="left",
             ).pack(anchor="w", pady=(3, 0))
         body = tk.Frame(outer, bg=self.SURFACE)
-        body.pack(fill="x", padx=22, pady=(0, 20))
+        body.pack(fill="x", padx=22, pady=(0, 22))
         body.columnconfigure(1, weight=1)
         return body
 
-    def _field(self, parent: tk.Frame, row: int, label: str, key: str, *, column: int = 0) -> ttk.Entry:
+    def _field(self, parent: tk.Frame, row: int, label: str, key: str, *, column: int = 0) -> ctk.CTkEntry:
         base = column * 2
         tk.Label(
-            parent, text=label.upper(), bg=self.SURFACE, fg=self.MUTED,
+            parent, text=label.upper(), bg=self.SURFACE, fg=self.DIM,
             font=("DejaVu Sans", 8, "bold")
-        ).grid(row=row, column=base, sticky="w", padx=(0, 12), pady=7)
-        entry = ttk.Entry(parent, textvariable=self.vars[key], style="Modern.TEntry")
-        entry.grid(row=row, column=base + 1, sticky="ew", pady=7, padx=(0, 14 if column == 0 else 0))
+        ).grid(row=row, column=base, sticky="w", padx=(0, 12), pady=8)
+        entry = ctk.CTkEntry(
+            parent, textvariable=self.vars[key], height=42, corner_radius=10,
+            fg_color=self.SURFACE_2, border_color=self.BORDER,
+            text_color=self.TEXT, border_width=1,
+        )
+        entry.grid(row=row, column=base + 1, sticky="ew", pady=8, padx=(0, 18 if column == 0 else 0))
         parent.columnconfigure(base + 1, weight=1)
         return entry
 
     def _button(
         self, parent: tk.Frame, text: str, command: object, *, primary: bool = False,
         danger: bool = False
-    ) -> tk.Button:
+    ) -> ctk.CTkButton:
         color = self.DANGER if danger else self.ACCENT if primary else self.SURFACE_2
-        hover = "#ff7c89" if danger else self.ACCENT_HOVER if primary else self.BORDER
-        button = tk.Button(
-            parent, text=text, command=command, bd=0, relief="flat", bg=color, fg="white",
-            activebackground=hover, activeforeground="white", font=("DejaVu Sans", 9, "bold"),
-            padx=17, pady=10, cursor="hand2"
+        hover = "#ff7a90" if danger else self.ACCENT_HOVER if primary else self.SURFACE_3
+        button = ctk.CTkButton(
+            parent, text=text, command=command, fg_color=color, hover_color=hover,
+            text_color="white", font=("DejaVu Sans", 9, "bold"),
+            height=40, corner_radius=10, border_width=1 if not primary and not danger else 0,
+            border_color=self.BORDER,
         )
-        button.bind("<Enter>", lambda _event: button.configure(bg=hover))
-        button.bind("<Leave>", lambda _event: button.configure(bg=color))
         return button
 
     def _build_account(self, frame: tk.Frame) -> None:
         content = self._scroll_page(frame, "account")
-        content.configure(padx=34, pady=28)
+        content.configure(padx=46, pady=38)
         self._page_header(
-            content, "Step 1 of 2", "Connect your account",
-            "Authorize once, then continue to your connected OnePlus device."
+            content, "Step 1 of 2", "Sign in and authorize",
+            "Connect the HeyTap account used by your phone. Credentials stay on this computer."
         )
-        signin = self._card(content, "HeyTap sign in", "A verification code will be sent to your account.")
+
+        workspace = tk.Frame(content, bg=self.BG)
+        workspace.pack(fill="x")
+        workspace.columnconfigure(0, weight=3)
+        workspace.columnconfigure(1, weight=2)
+
+        signin_outer = tk.Frame(
+            workspace, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        signin_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        signin = tk.Frame(signin_outer, bg=self.SURFACE)
+        signin.pack(fill="both", expand=True, padx=28, pady=26)
         tk.Label(
-            signin, text="ACCOUNT TYPE", bg=self.SURFACE, fg=self.MUTED,
+            signin, text="HEYTap SIGN IN", bg=self.SURFACE, fg=self.ACCENT,
+            font=("DejaVu Sans", 8, "bold"),
+        ).grid(row=0, column=0, columnspan=2, sticky="w")
+        tk.Label(
+            signin, text="Verify your account", bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 18, "bold"),
+        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(7, 3))
+        tk.Label(
+            signin, text="Choose a sign-in method and request a one-time code.",
+            bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 9),
+        ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(0, 20))
+        tk.Label(
+            signin, text="METHOD", bg=self.SURFACE, fg=self.DIM,
             font=("DejaVu Sans", 8, "bold")
-        ).grid(row=0, column=0, sticky="w", padx=(0, 12), pady=7)
+        ).grid(row=3, column=0, sticky="w", padx=(0, 14), pady=8)
         account_selector = ttk.Combobox(
             signin, textvariable=self.vars["account_type"], values=("Email", "Phone"),
             state="readonly", style="Modern.TCombobox"
         )
-        account_selector.grid(row=0, column=1, sticky="ew", pady=7)
-        self._field(signin, 1, "Email or phone", "account")
-        self._field(signin, 2, "Calling code", "calling_code")
-        self._field(signin, 3, "Verification code", "verification_code")
-        self._calling_widgets = signin.grid_slaves(row=2)
+        account_selector.grid(row=3, column=1, sticky="ew", pady=8)
+        self._field(signin, 4, "Email or phone", "account")
+        self._field(signin, 5, "Calling code", "calling_code")
+        self._field(signin, 6, "Verification code", "verification_code")
+        self._calling_widgets = signin.grid_slaves(row=5)
         self.vars["account_type"].trace_add("write", lambda *_: self._toggle_calling_code())
         self._toggle_calling_code()
+        signin.columnconfigure(1, weight=1)
         actions = tk.Frame(signin, bg=self.SURFACE)
-        actions.grid(row=4, column=1, sticky="w", pady=(12, 0))
+        actions.grid(row=7, column=0, columnspan=2, sticky="ew", pady=(20, 0))
         self._button(actions, "Send code", self._send_code).pack(side="left")
-        self._button(actions, "Verify & authorize  →", self._verify, primary=True).pack(side="left", padx=9)
         self._button(
-            actions, "Continue saved verification", self._continue_saved_verification
+            actions, "Verify account  →", self._verify, primary=True
+        ).pack(side="left", padx=9)
+        self._button(
+            actions, "Resume", self._continue_saved_verification
         ).pack(side="left")
 
-        auth = self._card(content, "Saved authorization", "Your secure login token is reused between launches.")
-        self._field(auth, 0, "Token cache", "token_cache")
+        side = tk.Frame(workspace, bg=self.BG)
+        side.grid(row=0, column=1, sticky="nsew", padx=(12, 0))
+        guide = tk.Frame(
+            side, bg=self.ACCENT_SOFT,
+            highlightthickness=1, highlightbackground="#423a73",
+        )
+        guide.pack(fill="x")
+        tk.Label(
+            guide, text="HOW IT WORKS", bg=self.ACCENT_SOFT, fg="#bcb5ff",
+            font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w", padx=22, pady=(20, 13))
+        for number, title, detail in (
+            ("1", "Request a code", "HeyTap sends it to the selected account."),
+            ("2", "Verify promptly", "Extra identity checks can expire quickly."),
+            ("3", "Continue locally", "Authorization is stored for later sessions."),
+        ):
+            item = tk.Frame(guide, bg=self.ACCENT_SOFT)
+            item.pack(fill="x", padx=22, pady=(0, 17))
+            tk.Label(
+                item, text=number, bg=self.ACCENT, fg="white", width=2,
+                font=("DejaVu Sans", 9, "bold"), pady=3,
+            ).pack(side="left", anchor="n")
+            copy = tk.Frame(item, bg=self.ACCENT_SOFT)
+            copy.pack(side="left", fill="x", expand=True, padx=11)
+            tk.Label(
+                copy, text=title, bg=self.ACCENT_SOFT, fg=self.TEXT,
+                font=("DejaVu Sans", 9, "bold"),
+            ).pack(anchor="w")
+            tk.Label(
+                copy, text=detail, bg=self.ACCENT_SOFT, fg=self.MUTED,
+                font=("DejaVu Sans", 8), wraplength=290, justify="left",
+            ).pack(anchor="w", pady=(2, 0))
+
+        auth_outer = tk.Frame(
+            side, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        auth_outer.pack(fill="x", pady=(18, 0))
+        auth = tk.Frame(auth_outer, bg=self.SURFACE)
+        auth.pack(fill="x", padx=22, pady=20)
+        tk.Label(
+            auth, text="LOCAL AUTHORIZATION", bg=self.SURFACE, fg=self.DIM,
+            font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w")
+        token_entry = ttk.Entry(auth, textvariable=self.vars["token_cache"], style="Modern.TEntry")
+        token_entry.pack(fill="x", pady=(10, 12))
         buttons = tk.Frame(auth, bg=self.SURFACE)
-        buttons.grid(row=1, column=1, sticky="w", pady=(10, 0))
+        buttons.pack(fill="x")
         self._button(buttons, "Import JSON", self._import_token).pack(side="left")
-        self._button(buttons, "Reauthorize", lambda: self._token_action("biz-auth")).pack(side="left", padx=9)
-        self._button(buttons, "Refresh authorization", lambda: self._token_action("primary-refresh"), primary=True).pack(side="left")
-        self._button(buttons, "Continue to device  →", lambda: self._show_page("device"), primary=True).pack(side="left", padx=9)
+        self._button(
+            buttons, "Reauthorize", lambda: self._token_action("biz-auth")
+        ).pack(side="left", padx=9)
+        self._button(
+            buttons, "Refresh", lambda: self._token_action("primary-refresh")
+        ).pack(side="left")
+        self._button(
+            auth, "Continue to device  →",
+            lambda: self._show_page("device"), primary=True,
+        ).pack(fill="x", pady=(14, 0))
 
     def _toggle_calling_code(self) -> None:
         visible = str(self.vars["account_type"].get()) == "Phone"
         for widget in getattr(self, "_calling_widgets", []):
             (widget.grid if visible else widget.grid_remove)()
 
-    def _build_device(self, frame: tk.Frame) -> None:
+    def _build_device_wizard(self, frame: tk.Frame) -> None:
         content = self._scroll_page(frame, "device")
-        content.configure(padx=34, pady=28)
+        content.configure(padx=48, pady=36)
         self._page_header(
-            content, "Step 2 of 2", "Unlock your device",
-            "Confirm the detected values, then follow the unlock workflow in order."
+            content, "Device workflow", "Prepare and authorize your phone",
+            "A focused path from unlock application to installed authorization.",
         )
-        result = tk.Frame(
-            content, bg=self.SURFACE_2, highlightthickness=1, highlightbackground=self.ACCENT
+
+        result = ctk.CTkFrame(
+            content, fg_color=self.ACCENT_SOFT, corner_radius=14,
+            border_width=1, border_color="#454072",
         )
-        result.pack(fill="x", pady=(0, 16))
-        result_copy = tk.Frame(result, bg=self.SURFACE_2)
+        result.pack(fill="x", pady=(0, 20))
+        result_copy = tk.Frame(result, bg=self.ACCENT_SOFT)
         result_copy.pack(side="left", fill="x", expand=True, padx=20, pady=15)
         self.device_result_title = tk.Label(
-            result_copy, text="Ready for a device request", bg=self.SURFACE_2, fg=self.TEXT,
-            font=("DejaVu Sans", 11, "bold")
+            result_copy, text="Ready for a device request",
+            bg=self.ACCENT_SOFT, fg=self.TEXT, font=("DejaVu Sans", 11, "bold"),
         )
         self.device_result_title.pack(anchor="w")
         self.device_result_detail = tk.Label(
             result_copy, text="Start with Check eligibility or Check status.",
+            bg=self.ACCENT_SOFT, fg=self.MUTED, font=("DejaVu Sans", 8),
+        )
+        self.device_result_detail.pack(anchor="w", pady=(3, 0))
+        self.copy_code_button = self._button(
+            result, "Copy unlock code", self._copy_unlock_code, primary=True,
+        )
+
+        workspace = tk.Frame(content, bg=self.BG)
+        workspace.pack(fill="both", expand=True)
+        workspace.columnconfigure(1, weight=1)
+
+        rail = ctk.CTkFrame(
+            workspace, width=260, fg_color=self.SURFACE,
+            corner_radius=16, border_width=1, border_color=self.BORDER_SOFT,
+        )
+        rail.grid(row=0, column=0, sticky="nsw", padx=(0, 18))
+        rail.grid_propagate(False)
+        tk.Label(
+            rail, text="YOUR PROGRESS", bg=self.SURFACE, fg=self.DIM,
+            font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w", padx=20, pady=(22, 14))
+
+        stage_host = ctk.CTkFrame(
+            workspace, fg_color=self.SURFACE, corner_radius=16,
+            border_width=1, border_color=self.BORDER_SOFT,
+        )
+        stage_host.grid(row=0, column=1, sticky="nsew")
+        workspace.rowconfigure(0, weight=1)
+
+        self._wizard_pages: dict[str, tk.Frame] = {}
+        self._wizard_buttons: dict[str, ctk.CTkButton] = {}
+
+        for key, number, title, detail in (
+            ("application", "01", "Unlock application", "Apply and retrieve your code"),
+            ("root", "02", "Temporary root", "Prepare the connected phone"),
+            ("install", "03", "Install authorization", "Validate, back up, and write"),
+        ):
+            button = ctk.CTkButton(
+                rail, text=f"{number}   {title}\n       {detail}",
+                anchor="w", height=62, corner_radius=11,
+                fg_color="transparent", hover_color=self.SURFACE_2,
+                text_color=self.MUTED, font=("DejaVu Sans", 9, "bold"),
+                command=lambda name=key: self._show_wizard_stage(name),
+            )
+            button.pack(fill="x", padx=10, pady=4)
+            self._wizard_buttons[key] = button
+            page = tk.Frame(stage_host, bg=self.SURFACE)
+            page.place(relx=0, rely=0, relwidth=1, relheight=1)
+            self._wizard_pages[key] = page
+
+        device_box = ctk.CTkFrame(
+            rail, fg_color=self.SURFACE_2, corner_radius=12,
+            border_width=1, border_color=self.BORDER,
+        )
+        device_box.pack(side="bottom", fill="x", padx=14, pady=14)
+        tk.Label(
+            device_box, text="LIVE DEVICE", bg=self.SURFACE_2, fg=self.DIM,
+            font=("DejaVu Sans", 7, "bold"),
+        ).pack(anchor="w", padx=14, pady=(13, 5))
+        tk.Label(
+            device_box, text="Connection details remain in the bar above.",
+            bg=self.SURFACE_2, fg=self.MUTED, font=("DejaVu Sans", 8),
+            justify="left", wraplength=205,
+        ).pack(anchor="w", padx=14)
+        self._button(
+            device_box, "Edit request profile", self._open_profile_editor,
+        ).pack(fill="x", padx=12, pady=12)
+
+        application = self._wizard_pages["application"]
+        self._wizard_heading(
+            application, "01", "Unlock application",
+            "Complete these actions in order. Server results appear above and in Technical Log.",
+        )
+        actions = tk.Frame(application, bg=self.SURFACE)
+        actions.pack(fill="both", expand=True, padx=28, pady=(0, 24))
+        for index, (title, detail, endpoint) in enumerate((
+            ("Check eligibility", "Confirm the connected device is eligible to apply.", "unlock-condition-match"),
+            ("Apply for unlock", "Submit the official unlock application.", "apply-unlock"),
+            ("Check application status", "Read the current review and approval state.", "get-apply-status"),
+            ("Retrieve unlock code", "Load the authorization issued for this device.", "get-history-unlock-code"),
+        )):
+            item = ctk.CTkFrame(
+                actions, fg_color=self.SURFACE_2, corner_radius=13,
+                border_width=1, border_color=self.BORDER_SOFT,
+            )
+            item.pack(fill="x", pady=6)
+            number = ctk.CTkLabel(
+                item, text=str(index + 1), width=36, height=36,
+                fg_color=self.ACCENT_SOFT, corner_radius=10,
+                text_color="#c4bdff", font=("DejaVu Sans", 10, "bold"),
+            )
+            number.pack(side="left", padx=14, pady=13)
+            copy = tk.Frame(item, bg=self.SURFACE_2)
+            copy.pack(side="left", fill="x", expand=True, pady=13)
+            tk.Label(
+                copy, text=title, bg=self.SURFACE_2, fg=self.TEXT,
+                font=("DejaVu Sans", 10, "bold"),
+            ).pack(anchor="w")
+            tk.Label(
+                copy, text=detail, bg=self.SURFACE_2, fg=self.MUTED,
+                font=("DejaVu Sans", 8),
+            ).pack(anchor="w", pady=(3, 0))
+            self._button(
+                item, "Run  →", lambda name=endpoint: self._device_action(name),
+                primary=index == 3,
+            ).pack(side="right", padx=14)
+        maintenance = tk.Frame(application, bg=self.SURFACE)
+        maintenance.pack(fill="x", padx=28, pady=(0, 24))
+        tk.Label(
+            maintenance, text="MAINTENANCE", bg=self.SURFACE, fg=self.DIM,
+            font=("DejaVu Sans", 7, "bold"),
+        ).pack(side="left", padx=(0, 12))
+        self._button(
+            maintenance, "Sync lock state",
+            lambda: self._device_action("update-client-lock-status"),
+        ).pack(side="left")
+        self._button(
+            maintenance, "Lock client", lambda: self._device_action("lock-client"),
+        ).pack(side="left", padx=8)
+
+        root_page = self._wizard_pages["root"]
+        self._wizard_heading(
+            root_page, "02", "Gain temporary root",
+            "Choose the exact installed OxygenOS build and keep the phone awake and unlocked.",
+        )
+        root_body = tk.Frame(root_page, bg=self.SURFACE)
+        root_body.pack(fill="both", expand=True, padx=30, pady=(5, 30))
+        root_panel = ctk.CTkFrame(
+            root_body, fg_color=self.SURFACE_2, corner_radius=15,
+            border_width=1, border_color=self.BORDER,
+        )
+        root_panel.pack(fill="x")
+        tk.Label(
+            root_panel, text="INSTALLED OXYGENOS VERSION",
+            bg=self.SURFACE_2, fg=self.DIM, font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w", padx=22, pady=(20, 8))
+        controls = tk.Frame(root_panel, bg=self.SURFACE_2)
+        controls.pack(fill="x", padx=22)
+        self.root_version = tk.StringVar(value="No version available")
+        self.root_version_menu = ctk.CTkComboBox(
+            controls, variable=self.root_version, values=["No version available"],
+            state="disabled", width=180, height=42, corner_radius=10,
+            fg_color=self.SURFACE_3, border_color=self.BORDER,
+            button_color=self.ACCENT_SOFT, button_hover_color=self.ACCENT,
+        )
+        self.root_version_menu.pack(side="left")
+        self._button(
+            controls, "Run root helper  →", self._run_root_helper, primary=True,
+        ).pack(side="left", padx=10)
+        self.root_status = tk.Label(
+            controls, text="Waiting", bg=self.SURFACE_2, fg=self.MUTED,
+            font=("DejaVu Sans", 9, "bold"),
+        )
+        self.root_status.pack(side="left", padx=10)
+        tk.Label(
+            root_panel,
+            text=(
+                "It may take several attempts. Keep the phone alive on its home screen and "
+                "disable System Optimization if available. If the phone reboots, unlock it "
+                "before trying again."
+            ),
+            bg=self.WARNING_SOFT, fg=self.WARNING, font=("DejaVu Sans", 8),
+            justify="left", wraplength=720, padx=15, pady=12,
+        ).pack(fill="x", padx=22, pady=20)
+
+        install = self._wizard_pages["install"]
+        self._wizard_heading(
+            install, "03", "Install device authorization",
+            "DeepTest validates the live phone before it writes anything.",
+        )
+        install_body = tk.Frame(install, bg=self.SURFACE)
+        install_body.pack(fill="both", expand=True, padx=30, pady=(0, 28))
+        checklist = ctk.CTkFrame(
+            install_body, fg_color=self.SURFACE_2, corner_radius=14,
+            border_width=1, border_color=self.BORDER,
+        )
+        checklist.pack(fill="x")
+        tk.Label(
+            checklist, text="READINESS", bg=self.SURFACE_2, fg=self.DIM,
+            font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w", padx=20, pady=(18, 7))
+        self.helper_readiness = tk.Label(
+            checklist,
+            text="Connected device  •  temporary root  •  validated unlock code",
             bg=self.SURFACE_2, fg=self.MUTED, font=("DejaVu Sans", 9),
-            justify="left", wraplength=600
+        )
+        self.helper_readiness.pack(anchor="w", padx=20, pady=(0, 18))
+        install_actions = tk.Frame(install_body, bg=self.SURFACE)
+        install_actions.pack(fill="x", pady=18)
+        self._button(
+            install_actions, "Check requirements", self._check_unlock_helper,
+        ).pack(side="left")
+        self.apply_helper_button = self._button(
+            install_actions, "Apply authorization to phone  →",
+            self._apply_unlock_authorization, primary=True,
+        )
+        self.apply_helper_button.pack(side="left", padx=10)
+        self.apply_helper_button.configure(state="disabled")
+        self._button(
+            install_actions, "Enter unlock code", self._enter_unlock_code,
+        ).pack(side="right")
+        safety = ctk.CTkFrame(
+            install_body, fg_color=self.SUCCESS_SOFT, corner_radius=13,
+        )
+        safety.pack(fill="x")
+        tk.Label(
+            safety,
+            text=(
+                "Backup first\nThe original oplusreserve1 image is kept unchanged on this computer "
+                "before a patched copy is written."
+            ),
+            bg=self.SUCCESS_SOFT, fg=self.SUCCESS, font=("DejaVu Sans", 9),
+            justify="left", padx=16, pady=14,
+        ).pack(anchor="w")
+        self.reboot_bootloader_button = self._button(
+            install_body, "Reboot to bootloader", self._reboot_to_bootloader,
+            primary=True,
+        )
+        self.reboot_bootloader_button.pack(anchor="e", pady=(20, 0))
+        self.reboot_bootloader_button.configure(state="disabled")
+        self._show_wizard_stage("application")
+
+    def _wizard_heading(
+        self, parent: tk.Frame, number: str, title: str, description: str,
+    ) -> None:
+        header = tk.Frame(parent, bg=self.SURFACE)
+        header.pack(fill="x", padx=30, pady=(28, 22))
+        ctk.CTkLabel(
+            header, text=number, width=42, height=42,
+            fg_color=self.ACCENT, corner_radius=12, text_color="white",
+            font=("DejaVu Sans", 10, "bold"),
+        ).pack(side="left")
+        copy = tk.Frame(header, bg=self.SURFACE)
+        copy.pack(side="left", fill="x", expand=True, padx=14)
+        tk.Label(
+            copy, text=title, bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 19, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            copy, text=description, bg=self.SURFACE, fg=self.MUTED,
+            font=("DejaVu Sans", 9),
+        ).pack(anchor="w", pady=(3, 0))
+
+    def _show_wizard_stage(self, key: str) -> None:
+        self._wizard_pages[key].tkraise()
+        for name, button in self._wizard_buttons.items():
+            button.configure(
+                fg_color=self.ACCENT_SOFT if name == key else "transparent",
+                text_color=self.TEXT if name == key else self.MUTED,
+            )
+
+    def _open_profile_editor(self) -> None:
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Device request profile")
+        dialog.geometry("760x660")
+        dialog.minsize(650, 560)
+        dialog.configure(fg_color=self.BG)
+        dialog.transient(self)
+        dialog.grab_set()
+        tk.Label(
+            dialog, text="Device request profile", bg=self.BG, fg=self.TEXT,
+            font=("DejaVu Sans", 21, "bold"),
+        ).pack(anchor="w", padx=30, pady=(26, 3))
+        tk.Label(
+            dialog, text="Advanced server-facing values. Change these only when required.",
+            bg=self.BG, fg=self.MUTED, font=("DejaVu Sans", 9),
+        ).pack(anchor="w", padx=30, pady=(0, 18))
+        form = ctk.CTkScrollableFrame(
+            dialog, fg_color=self.SURFACE, corner_radius=15,
+            border_width=1, border_color=self.BORDER_SOFT,
+        )
+        form.pack(fill="both", expand=True, padx=30, pady=(0, 18))
+        form.columnconfigure(1, weight=1)
+        fields = (
+            ("Device GUID (UDID)", "udid"), ("Model", "model"),
+            ("OTA version", "ota_version"), ("Chip ID", "chip_id"),
+            ("Brand", "brand"), ("Operator", "operator"),
+            ("OS version", "os_version"), ("App version", "app_version"),
+            ("Client lock status", "lock_status"), ("API host", "api_host"),
+        )
+        for row, (label, key) in enumerate(fields):
+            entry = self._field(form, row, label, key)
+            if key == "chip_id":
+                entry.configure(show="" if self._show_sensitive else "•")
+                self._chip_entry = entry
+        footer = tk.Frame(dialog, bg=self.BG)
+        footer.pack(fill="x", padx=30, pady=(0, 24))
+        def close_profile() -> None:
+            self._save_settings()
+            self._chip_entry = None
+            dialog.destroy()
+
+        dialog.protocol("WM_DELETE_WINDOW", close_profile)
+        self._button(
+            footer, "Detect Chip ID", self._detect_chip_id,
+        ).pack(side="left")
+        self._button(
+            footer, "Save & close", close_profile, primary=True,
+        ).pack(side="right")
+
+    def _build_device(self, frame: tk.Frame) -> None:
+        content = self._scroll_page(frame, "device")
+        content.configure(padx=46, pady=38)
+        self._page_header(
+            content, "Step 2 of 2", "Unlock workspace",
+            "Follow the guided path from eligibility to a validated device authorization."
+        )
+
+        result = tk.Frame(
+            content, bg=self.ACCENT_SOFT,
+            highlightthickness=1, highlightbackground="#4b4382",
+        )
+        result.pack(fill="x", pady=(0, 22))
+        tk.Label(
+            result, text="STATUS", bg=self.ACCENT, fg="white",
+            font=("DejaVu Sans", 8, "bold"), padx=14, pady=6,
+        ).pack(side="left", padx=(18, 0))
+        result_copy = tk.Frame(result, bg=self.ACCENT_SOFT)
+        result_copy.pack(side="left", fill="x", expand=True, padx=14, pady=15)
+        self.device_result_title = tk.Label(
+            result_copy, text="Ready for a device request", bg=self.ACCENT_SOFT, fg=self.TEXT,
+            font=("DejaVu Sans", 10, "bold")
+        )
+        self.device_result_title.pack(anchor="w")
+        self.device_result_detail = tk.Label(
+            result_copy, text="Start with Check eligibility or Check status.",
+            bg=self.ACCENT_SOFT, fg=self.MUTED, font=("DejaVu Sans", 8),
+            justify="left", wraplength=700
         )
         self.device_result_detail.pack(anchor="w", pady=(3, 0))
         self.copy_code_button = self._button(result, "Copy unlock code", self._copy_unlock_code, primary=True)
-        profile = self._card(content, "Target device", "Values are saved locally between sessions.")
+        self.copy_code_button.pack(side="right", padx=18)
+
+        dashboard = tk.Frame(content, bg=self.BG)
+        dashboard.pack(fill="x")
+        dashboard.columnconfigure(0, weight=3)
+        dashboard.columnconfigure(1, weight=2)
+
+        journey_outer = tk.Frame(
+            dashboard, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        journey_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 11))
+        journey = tk.Frame(journey_outer, bg=self.SURFACE)
+        journey.pack(fill="both", expand=True, padx=25, pady=23)
+        tk.Label(
+            journey, text="UNLOCK JOURNEY", bg=self.SURFACE, fg=self.ACCENT,
+            font=("DejaVu Sans", 8, "bold"),
+        ).pack(anchor="w")
+        tk.Label(
+            journey, text="Complete each step in order", bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 16, "bold"),
+        ).pack(anchor="w", pady=(6, 2))
+        tk.Label(
+            journey, text="Results appear in the status banner and Technical Log.",
+            bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 9),
+        ).pack(anchor="w", pady=(0, 18))
+
+        names = [
+            ("01", "Check eligibility", "Confirm this device can submit an application", "unlock-condition-match"),
+            ("02", "Apply for unlock", "Send the unlock application to the server", "apply-unlock"),
+            ("03", "Check status", "Read the review and approval state", "get-apply-status"),
+            ("04", "Get unlock code", "Retrieve the issued device authorization", "get-history-unlock-code"),
+            ("•", "Sync lock state", "Refresh the server-side client state", "update-client-lock-status"),
+            ("•", "Lock client", "Send the optional client lock request", "lock-client"),
+        ]
+        for index, (number, title, detail, endpoint) in enumerate(names):
+            row = tk.Frame(journey, bg=self.SURFACE)
+            row.pack(fill="x")
+            marker_column = tk.Frame(row, bg=self.SURFACE, width=48)
+            marker_column.pack(side="left", fill="y")
+            marker_column.pack_propagate(False)
+            tk.Label(
+                marker_column, text=number,
+                bg=self.ACCENT if index < 4 else self.SURFACE_2,
+                fg="white" if index < 4 else self.MUTED,
+                width=3, font=("DejaVu Sans", 8, "bold"), pady=6,
+            ).pack(anchor="n")
+            copy = tk.Frame(row, bg=self.SURFACE)
+            copy.pack(side="left", fill="x", expand=True, padx=(4, 12), pady=(1, 13))
+            tk.Label(
+                copy, text=title, bg=self.SURFACE, fg=self.TEXT,
+                font=("DejaVu Sans", 10, "bold"),
+            ).pack(anchor="w")
+            tk.Label(
+                copy, text=detail, bg=self.SURFACE, fg=self.MUTED,
+                font=("DejaVu Sans", 8),
+            ).pack(anchor="w", pady=(3, 0))
+            self._button(
+                row, "Run  →", lambda item=endpoint: self._device_action(item)
+            ).pack(side="right", anchor="n")
+            if index != len(names) - 1:
+                tk.Frame(journey, bg=self.BORDER_SOFT, height=1).pack(
+                    fill="x", padx=(52, 0), pady=(0, 12)
+                )
+
+        profile_outer = tk.Frame(
+            dashboard, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        profile_outer.grid(row=0, column=1, sticky="nsew", padx=(11, 0))
+        profile = tk.Frame(profile_outer, bg=self.SURFACE)
+        profile.pack(fill="both", expand=True, padx=23, pady=23)
+        tk.Label(
+            profile, text="REQUEST PROFILE", bg=self.SURFACE, fg=self.ACCENT,
+            font=("DejaVu Sans", 8, "bold"),
+        ).grid(row=0, column=0, columnspan=2, sticky="w")
+        tk.Label(
+            profile, text="Target device", bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 16, "bold"),
+        ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 15))
         fields = [
             ("Device GUID (UDID)", "udid"),
             ("Model", "model"),
@@ -438,7 +968,7 @@ class DeepTestingApp(tk.Tk):
             ("API host", "api_host"),
         ]
         for index, (label, key) in enumerate(fields):
-            entry = self._field(profile, index // 2, label, key, column=index % 2)
+            entry = self._field(profile, index + 2, label, key)
             if key == "chip_id":
                 entry.configure(show="•")
                 self._chip_entry = entry
@@ -446,114 +976,122 @@ class DeepTestingApp(tk.Tk):
             profile, text="Register fresh cryptographic keys before the request",
             variable=self.vars["register_keys"], bg=self.SURFACE, fg=self.MUTED,
             activebackground=self.SURFACE, activeforeground=self.TEXT, selectcolor=self.SURFACE_2,
-            font=("DejaVu Sans", 9)
+            font=("DejaVu Sans", 8), wraplength=310, justify="left",
         )
-        check.grid(row=5, column=1, columnspan=3, sticky="w", pady=(10, 0))
+        check.grid(row=12, column=0, columnspan=2, sticky="w", pady=(11, 0))
         self._button(profile, "Detect Chip ID from ADB", self._detect_chip_id).grid(
-            row=6, column=1, sticky="w", pady=(10, 0)
+            row=13, column=0, columnspan=2, sticky="w", pady=(11, 0)
         )
 
-        actions = self._card(content, "Unlock workflow", "Use the first four actions in order.")
-        names = [
-            ("1  Check eligibility", "Confirm this device can apply", "unlock-condition-match", False),
-            ("2  Apply for unlock", "Submit the unlock request", "apply-unlock", True),
-            ("3  Check status", "View review and approval state", "get-apply-status", False),
-            ("4  Get unlock code", "Retrieve an issued authorization", "get-history-unlock-code", False),
-            ("Sync lock state", "Update server-side lock status", "update-client-lock-status", False),
-            ("Lock client", "Send the client lock request", "lock-client", True),
-        ]
-        for index, (title, detail, endpoint, important) in enumerate(names):
-            tile = tk.Frame(actions, bg=self.SURFACE_2, highlightthickness=1, highlightbackground=self.BORDER)
-            tile.grid(row=index // 2, column=index % 2, sticky="ew", padx=(0, 8), pady=6)
-            tile.columnconfigure(0, weight=1)
-            copy = tk.Frame(tile, bg=self.SURFACE_2)
-            copy.grid(row=0, column=0, sticky="w", padx=15, pady=13)
-            tk.Label(
-                copy, text=title, bg=self.SURFACE_2, fg=self.TEXT,
-                font=("DejaVu Sans", 10, "bold")
-            ).pack(anchor="w")
-            tk.Label(
-                copy, text=detail, bg=self.SURFACE_2, fg=self.MUTED,
-                font=("DejaVu Sans", 8)
-            ).pack(anchor="w", pady=(2, 0))
-            self._button(
-                tile, "Run  →", lambda item=endpoint: self._device_action(item), primary=False
-            ).grid(row=0, column=1, padx=12)
-        actions.columnconfigure(1, weight=1)
-        actions.columnconfigure(3, weight=1)
+        preparation = tk.Frame(content, bg=self.BG)
+        preparation.pack(fill="x", pady=(22, 0))
+        preparation.columnconfigure(0, weight=1)
+        preparation.columnconfigure(1, weight=1)
 
-        root_card = self._card(content, "Gain temp root", "Run the local completion script and verify the current root state.")
-        root_card.columnconfigure(1, weight=1)
-        self.root_status = tk.Label(root_card, text="Ready", bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 9))
-        self._button(root_card, "Run root helper  →", self._run_root_helper, primary=True).grid(row=0, column=1, sticky="w", padx=(8, 0))
-        self.root_status.grid(row=0, column=2, sticky="w", padx=(14, 2), pady=4)
+        root_outer = tk.Frame(
+            preparation, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
+        )
+        root_outer.grid(row=0, column=0, sticky="nsew", padx=(0, 11))
+        root_card = tk.Frame(root_outer, bg=self.SURFACE)
+        root_card.pack(fill="both", expand=True, padx=24, pady=22)
+        tk.Label(
+            root_card, text="DEVICE PREPARATION", bg=self.SURFACE, fg=self.ACCENT,
+            font=("DejaVu Sans", 8, "bold"),
+        ).grid(row=0, column=0, columnspan=3, sticky="w")
+        tk.Label(
+            root_card, text="Gain temporary root", bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 15, "bold"),
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(6, 2))
+        tk.Label(
+            root_card, text="Choose the exact installed OxygenOS build.",
+            bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 8),
+        ).grid(row=2, column=0, columnspan=3, sticky="w", pady=(0, 15))
+        root_card.columnconfigure(2, weight=1)
         self.root_version = tk.StringVar(value="No version available")
-        self.root_version_menu = ttk.Combobox(root_card, textvariable=self.root_version,
-            values=("No version available",), state="disabled", width=14, style="Modern.TCombobox")
-        self.root_version_menu.grid(row=0, column=0, sticky="w")
+        self.root_version_menu = ttk.Combobox(
+            root_card, textvariable=self.root_version,
+            values=("No version available",), state="disabled", width=14,
+            style="Modern.TCombobox",
+        )
+        self.root_version_menu.grid(row=3, column=0, sticky="w")
+        self._button(
+            root_card, "Run root helper  →", self._run_root_helper, primary=True
+        ).grid(row=3, column=1, sticky="w", padx=10)
+        self.root_status = tk.Label(
+            root_card, text="Waiting", bg=self.SURFACE, fg=self.MUTED,
+            font=("DejaVu Sans", 8, "bold"),
+        )
+        self.root_status.grid(row=3, column=2, sticky="w", padx=(4, 0))
         tk.Label(
             root_card,
             text=(
-                "Temporary root may take several attempts. Keep the phone awake on the home "
-                "screen; disabling System Optimization may improve reliability. If the phone "
-                "reboots, unlock it and try again."
+                "May require several attempts. Keep the phone awake and unlocked. "
+                "If it reboots, unlock it before retrying."
             ),
-            bg=self.SURFACE,
+            bg=self.WARNING_SOFT,
             fg=self.WARNING,
-            font=("DejaVu Sans", 8),
-            justify="left",
-            wraplength=900,
-        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(10, 0))
+            font=("DejaVu Sans", 8), justify="left", wraplength=490,
+            padx=12, pady=9,
+        ).grid(row=4, column=0, columnspan=3, sticky="ew", pady=(15, 0))
 
-        helper = self._card(
-            content,
-            "Install unlock authorization",
-            "Back up, patch, and write the approved authorization to oplusreserve1.",
+        auth_outer = tk.Frame(
+            preparation, bg=self.SURFACE,
+            highlightthickness=1, highlightbackground=self.BORDER_SOFT,
         )
-        helper.columnconfigure(1, weight=1)
-        steps = tk.Frame(helper, bg=self.SURFACE_2, highlightthickness=1, highlightbackground=self.BORDER)
-        steps.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(2, 12))
+        auth_outer.grid(row=0, column=1, sticky="nsew", padx=(11, 0))
+        helper = tk.Frame(auth_outer, bg=self.SURFACE)
+        helper.pack(fill="both", expand=True, padx=24, pady=22)
         tk.Label(
-            steps,
-            text="REQUIRES",
-            bg=self.SURFACE_2,
-            fg=self.MUTED,
+            helper, text="FINAL INSTALLATION", bg=self.SURFACE, fg=self.ACCENT,
             font=("DejaVu Sans", 8, "bold"),
-        ).pack(anchor="w", padx=15, pady=(12, 5))
+        ).pack(anchor="w")
+        tk.Label(
+            helper, text="Install authorization", bg=self.SURFACE, fg=self.TEXT,
+            font=("DejaVu Sans", 15, "bold"),
+        ).pack(anchor="w", pady=(6, 2))
+        tk.Label(
+            helper, text="Check all prerequisites before writing to the device.",
+            bg=self.SURFACE, fg=self.MUTED, font=("DejaVu Sans", 8),
+        ).pack(anchor="w", pady=(0, 13))
+        readiness = tk.Frame(
+            helper, bg=self.SURFACE_2,
+            highlightthickness=1, highlightbackground=self.BORDER,
+        )
+        readiness.pack(fill="x")
         self.helper_readiness = tk.Label(
-            steps,
-            text="ADB device  •  root access  •  issued unlock code",
+            readiness,
+            text="Connected device  •  temporary root  •  validated unlock code",
             bg=self.SURFACE_2,
             fg=self.MUTED,
-            font=("DejaVu Sans", 9),
-            justify="left",
+            font=("DejaVu Sans", 8), justify="left", wraplength=470,
         )
-        self.helper_readiness.pack(anchor="w", padx=15, pady=(0, 12))
+        self.helper_readiness.pack(anchor="w", padx=13, pady=12)
         helper_buttons = tk.Frame(helper, bg=self.SURFACE)
-        helper_buttons.grid(row=1, column=0, columnspan=2, sticky="ew")
+        helper_buttons.pack(fill="x", pady=(13, 0))
         self._button(helper_buttons, "Check requirements", self._check_unlock_helper).pack(side="left")
         self.apply_helper_button = self._button(
             helper_buttons,
-            "Apply authorization to phone  →",
+            "Apply to phone  →",
             self._apply_unlock_authorization,
             primary=True,
         )
         self.apply_helper_button.pack(side="left", padx=9)
         self.apply_helper_button.configure(state="disabled")
         self._button(
-            helper_buttons, "Enter unlock code", self._enter_unlock_code
-        ).pack(side="right")
+            helper, "Enter unlock code manually", self._enter_unlock_code
+        ).pack(anchor="w", pady=(10, 0))
         tk.Label(
             helper,
-            text="Creates a local backup first. This writes oplusreserve1 but does not reboot, wipe, or unlock bootloader.",
+            text="An untouched partition backup is retained locally.",
             bg=self.SURFACE,
             fg=self.MUTED,
             font=("DejaVu Sans", 8),
-        ).grid(row=2, column=0, columnspan=2, sticky="w", pady=(10, 0))
+        ).pack(anchor="w", pady=(10, 0))
         self.reboot_bootloader_button = self._button(
             helper, "Reboot to bootloader", self._reboot_to_bootloader, primary=True
         )
-        self.reboot_bootloader_button.grid(row=3, column=1, sticky="e", pady=(14, 0))
+        self.reboot_bootloader_button.pack(anchor="e", pady=(14, 0))
         self.reboot_bootloader_button.configure(state="disabled")
 
     def _run_root_helper(self) -> None:
@@ -615,13 +1153,16 @@ class DeepTestingApp(tk.Tk):
 
     def _build_output(self, frame: tk.Frame) -> None:
         top = tk.Frame(frame, bg=self.BG)
-        top.pack(fill="x", padx=34, pady=(28, 18))
+        top.pack(fill="x", padx=38, pady=(32, 18))
         title = tk.Frame(top, bg=self.BG)
         title.pack(side="left")
-        self._page_header(title, "Diagnostics", "Technical log", "Raw requests and server responses appear here.")
+        self._page_header(
+            title, "Diagnostics", "Technical log",
+            "Follow commands, helper output, and server responses without opening a terminal.",
+        )
         self._button(top, "Clear console", self._clear_output).pack(side="right", anchor="n")
         console = tk.Frame(frame, bg="#080d18", highlightthickness=1, highlightbackground=self.BORDER)
-        console.pack(fill="both", expand=True, padx=34, pady=(0, 30))
+        console.pack(fill="both", expand=True, padx=38, pady=(0, 32))
         bar = tk.Frame(console, bg=self.SURFACE, height=38)
         bar.pack(fill="x")
         bar.pack_propagate(False)
@@ -630,7 +1171,7 @@ class DeepTestingApp(tk.Tk):
                 side="left", padx=(12 if color == self.DANGER else 0, 5)
             )
         tk.Label(
-            bar, text="deeptest-2.0 / activity", bg=self.SURFACE, fg=self.MUTED,
+            bar, text="deeptest / live activity", bg=self.SURFACE, fg=self.MUTED,
             font=("DejaVu Sans Mono", 8)
         ).pack(side="left", padx=10)
         text_wrap = tk.Frame(console, bg="#080d18")
@@ -1541,8 +2082,14 @@ class DeepTestingApp(tk.Tk):
 
     def _toggle_sensitive(self) -> None:
         self._show_sensitive = not self._show_sensitive
-        self.sensitive_button.configure(text="Hide critical information" if self._show_sensitive else "Show critical information")
-        if hasattr(self, "_chip_entry"):
+        self.sensitive_button.configure(
+            text="◉  Hide sensitive values" if self._show_sensitive
+            else "◉  Show sensitive values"
+        )
+        if (
+            getattr(self, "_chip_entry", None) is not None
+            and self._chip_entry.winfo_exists()
+        ):
             self._chip_entry.configure(show="" if self._show_sensitive else "•")
         self._render_connected_device()
         self._render_helper_readiness()

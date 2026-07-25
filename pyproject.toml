@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
     "cryptography>=41",
     "flask>=3.0",
+    "pywebview>=6.0,<7",
     "requests>=2.31",
 ]
 
@@ -23,4 +24,4 @@ deeptesting-gui = "deeptesting.gui:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-deeptesting = ["assets/*.jar"]
+deeptesting = ["assets/*.jar", "web/*.html"]

@@ -14,7 +14,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-tk
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gir1.2-webkit2-4.1 libcairo2-dev libgirepository1.0-dev libgtk-3-0 pkg-config
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -25,16 +27,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e .
+          pip install "PyGObject<3.51"
           pip install pyinstaller
 
-      - name: Build executable
+      - name: Download Android Platform Tools
         run: |
-          pyinstaller --noconfirm --clean --windowed \
-            --name DeepTest2 \
-            --add-data 'android-helper/assets/OP15:android-helper/assets/OP15' \
-            --add-data 'android-helper/assets/ACE6T:android-helper/assets/ACE6T' \
-            --add-data 'src/deeptesting/assets:deeptesting/assets' \
-            --paths src launcher.py
+          curl -L https://dl.google.com/android/repository/platform-tools-latest-linux.zip -o platform-tools.zip
+          unzip -q platform-tools.zip
+
+      - name: Build executable
+        run: pyinstaller --noconfirm --clean DeepTest2.spec
 
       - name: Package artifact
         run: tar -czf DeepTest2-linux-x86_64.tar.gz -C dist DeepTest2
