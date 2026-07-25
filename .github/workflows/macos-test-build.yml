@@ -1,0 +1,40 @@
+name: macOS test build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . pyinstaller
+
+      - name: Download Android Platform Tools
+        run: |
+          curl -L https://dl.google.com/android/repository/platform-tools-latest-darwin.zip -o platform-tools.zip
+          ditto -x -k platform-tools.zip .
+          chmod +x platform-tools/adb
+
+      - name: Build application
+        run: pyinstaller --noconfirm --clean DeepTest2.spec
+
+      - name: Package test build
+        run: ditto -c -k --sequesterRsrc --keepParent dist/DeepTest2.app DeepTest2-macOS-test.zip
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepTest2-macOS-test
+          path: DeepTest2-macOS-test.zip

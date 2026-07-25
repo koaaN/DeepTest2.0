@@ -1,14 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 import os
+import sys
 from pathlib import Path
 
 
-platform_backend = (
-    'webview.platforms.edgechromium'
-    if os.name == 'nt'
-    else 'webview.platforms.gtk'
-)
+if sys.platform == 'win32':
+    platform_backend = 'webview.platforms.edgechromium'
+elif sys.platform == 'darwin':
+    platform_backend = 'webview.platforms.cocoa'
+else:
+    platform_backend = 'webview.platforms.gtk'
 
 datas = [
     ('android-helper/assets/OP15', 'android-helper/assets/OP15'),
@@ -62,3 +64,16 @@ coll = COLLECT(
     upx_exclude=[],
     name='DeepTest2',
 )
+
+if sys.platform == 'darwin':
+    app = BUNDLE(
+        coll,
+        name='DeepTest2.app',
+        icon=None,
+        bundle_identifier='com.koaan.deeptest2',
+        info_plist={
+            'CFBundleName': 'DeepTest 2.0',
+            'CFBundleDisplayName': 'DeepTest 2.0',
+            'NSHighResolutionCapable': True,
+        },
+    )
