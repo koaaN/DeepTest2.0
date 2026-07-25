@@ -48,7 +48,7 @@ class DeepTestingApp(tk.Tk):
         self.last_unlock_code = ""
         self.current_page = "account"
         self.auto_resume_attempts: set[str] = set()
-        self.nav_buttons: dict[str, tk.Button] = {}
+        self.nav_buttons: dict[str, ttk.Button] = {}
         self.pages: dict[str, tk.Frame] = {}
         self.scroll_canvases: dict[str, tk.Canvas] = {}
         self.vars: dict[str, tk.Variable] = {}
@@ -124,6 +124,32 @@ class DeepTestingApp(tk.Tk):
             "Modern.Horizontal.TProgressbar", troughcolor=self.SURFACE,
             background=self.ACCENT, borderwidth=0, thickness=3
         )
+        # macOS draws tk.Button with the native aqua renderer and ignores -background,
+        # so themed buttons came out as white text on a white button. clam honours colours.
+        for name, bg, fg, hover, font, padding in (
+            # Filled buttons darken on hover: the lighter tints left white text under 3:1.
+            ("Primary.TButton", self.ACCENT, "white", "#5563f0", ("DejaVu Sans", 9, "bold"), (17, 10)),
+            ("Secondary.TButton", self.SURFACE_2, self.TEXT, self.BORDER, ("DejaVu Sans", 9, "bold"), (17, 10)),
+            ("Danger.TButton", "#e8596a", "white", "#d9455a", ("DejaVu Sans", 9, "bold"), (17, 10)),
+            ("Nav.TButton", self.SIDEBAR, self.MUTED, self.SURFACE_2, ("DejaVu Sans", 10), (18, 13)),
+            ("NavActive.TButton", self.SURFACE_2, self.TEXT, self.SURFACE_2, ("DejaVu Sans", 10, "bold"), (18, 13)),
+            ("Icon.TButton", self.SURFACE, self.MUTED, self.SURFACE_2, ("DejaVu Sans", 11, "bold"), (4, 0)),
+            ("Chip.TButton", self.SURFACE_2, self.TEXT, self.BORDER, ("DejaVu Sans", 8, "bold"), (10, 5)),
+        ):
+            style.configure(
+                name, background=bg, foreground=fg, font=font, padding=padding,
+                borderwidth=0, relief="flat", focuscolor=bg,
+                lightcolor=bg, darkcolor=bg, bordercolor=bg,
+            )
+            style.map(
+                name,
+                background=[("disabled", self.SURFACE_2), ("pressed", hover), ("active", hover)],
+                foreground=[("disabled", self.MUTED), ("active", fg)],
+                lightcolor=[("pressed", hover), ("active", hover)],
+                darkcolor=[("pressed", hover), ("active", hover)],
+            )
+        style.configure("Nav.TButton", anchor="w")
+        style.configure("NavActive.TButton", anchor="w")
 
     def _build(self) -> None:
         shell = tk.Frame(self, bg=self.BG)
@@ -158,11 +184,10 @@ class DeepTestingApp(tk.Tk):
             ("device", "2", "Device & unlock"),
             ("activity", "≡", "Technical log"),
         ):
-            button = tk.Button(
-                sidebar, text=f"  {icon}    {text}", anchor="w", bd=0, relief="flat",
-                bg=self.SIDEBAR, fg=self.MUTED, activebackground=self.SURFACE_2,
-                activeforeground=self.TEXT, font=("DejaVu Sans", 10),
-                padx=18, pady=13, cursor="hand2", command=lambda page=key: self._show_page(page)
+            button = ttk.Button(
+                sidebar, text=f"  {icon}    {text}", style="Nav.TButton",
+                cursor="hand2", takefocus=False,
+                command=lambda page=key: self._show_page(page)
             )
             button.pack(fill="x", padx=10, pady=2)
             self.nav_buttons[key] = button
@@ -189,11 +214,9 @@ class DeepTestingApp(tk.Tk):
             device_heading, text="CONNECTED DEVICE", bg=self.SURFACE, fg=self.MUTED,
             font=("DejaVu Sans", 8, "bold")
         ).pack(side="left")
-        refresh = tk.Button(
+        refresh = ttk.Button(
             device_heading, text="↻", command=self._refresh_connected_device,
-            bd=0, relief="flat", bg=self.SURFACE, fg=self.MUTED,
-            activebackground=self.SURFACE_2, activeforeground=self.TEXT,
-            font=("DejaVu Sans", 11, "bold"), cursor="hand2", padx=4, pady=0
+            style="Icon.TButton", cursor="hand2", width=2
         )
         refresh.pack(side="right")
         self._show_device_ids = False
@@ -206,9 +229,9 @@ class DeepTestingApp(tk.Tk):
         main = tk.Frame(shell, bg=self.BG)
         main.pack(side="left", fill="both", expand=True)
         self._show_sensitive = False
-        self.sensitive_button = tk.Button(main, text="Show critical information", command=self._toggle_sensitive,
-            bd=0, relief="flat", bg=self.SURFACE_2, fg=self.TEXT, activebackground=self.BORDER,
-            font=("DejaVu Sans", 8, "bold"), cursor="hand2", padx=10, pady=5)
+        self.sensitive_button = ttk.Button(
+            main, text="Show critical information", command=self._toggle_sensitive,
+            style="Chip.TButton", cursor="hand2")
         self.sensitive_button.pack(anchor="ne", padx=18, pady=(8, 0))
         self.page_host = tk.Frame(main, bg=self.BG)
         self.page_host.pack(fill="both", expand=True)
@@ -240,12 +263,7 @@ class DeepTestingApp(tk.Tk):
         self.current_page = key
         self.pages[key].tkraise()
         for name, button in self.nav_buttons.items():
-            active = name == key
-            button.configure(
-                bg=self.SURFACE_2 if active else self.SIDEBAR,
-                fg=self.TEXT if active else self.MUTED,
-                font=("DejaVu Sans", 10, "bold" if active else "normal"),
-            )
+            button.configure(style="NavActive.TButton" if name == key else "Nav.TButton")
 
     def _scroll_page(self, parent: tk.Frame, key: str) -> tk.Frame:
         canvas = tk.Canvas(parent, bg=self.BG, highlightthickness=0)
@@ -334,17 +352,9 @@ class DeepTestingApp(tk.Tk):
     def _button(
         self, parent: tk.Frame, text: str, command: object, *, primary: bool = False,
         danger: bool = False
-    ) -> tk.Button:
-        color = self.DANGER if danger else self.ACCENT if primary else self.SURFACE_2
-        hover = "#ff7c89" if danger else self.ACCENT_HOVER if primary else self.BORDER
-        button = tk.Button(
-            parent, text=text, command=command, bd=0, relief="flat", bg=color, fg="white",
-            activebackground=hover, activeforeground="white", font=("DejaVu Sans", 9, "bold"),
-            padx=17, pady=10, cursor="hand2"
-        )
-        button.bind("<Enter>", lambda _event: button.configure(bg=hover))
-        button.bind("<Leave>", lambda _event: button.configure(bg=color))
-        return button
+    ) -> ttk.Button:
+        style = "Danger.TButton" if danger else "Primary.TButton" if primary else "Secondary.TButton"
+        return ttk.Button(parent, text=text, command=command, style=style, cursor="hand2")
 
     def _build_account(self, frame: tk.Frame) -> None:
         content = self._scroll_page(frame, "account")
