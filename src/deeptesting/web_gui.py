@@ -130,7 +130,9 @@ class Api:
         env = os.environ.copy()
         env["PYTHONUTF8"] = "1"
         result = subprocess.run(command, capture_output=True, text=True, env=env)
-        output = (result.stdout + result.stderr).strip()
+        # A windowed PyInstaller executable can expose either captured stream
+        # as None on Windows. Treat a missing stream as empty output.
+        output = ((result.stdout or "") + (result.stderr or "")).strip()
         if result.returncode not in (0, 3):
             raise RuntimeError(output or "The operation failed.")
         return output
