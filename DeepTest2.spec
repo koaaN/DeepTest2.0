@@ -7,7 +7,7 @@ from pathlib import Path
 platform_backend = (
     'webview.platforms.edgechromium'
     if os.name == 'nt'
-    else 'webview.platforms.gtk'
+    else 'webview.platforms.qt'
 )
 
 datas = [

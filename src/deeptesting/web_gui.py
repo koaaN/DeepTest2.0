@@ -427,5 +427,5 @@ def main() -> int:
         width=1440, height=900, min_size=(1080, 700),
         background_color="#090b10",
     )
-    webview.start(gui="gtk" if os.name != "nt" else None, debug=False)
+    webview.start(gui="qt" if os.name != "nt" else None, debug=False)
     return 0
