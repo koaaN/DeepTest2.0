@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
+import io
 import os
 import re
 import shutil
 import subprocess
 import sys
 import uuid
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 import webview
@@ -112,7 +114,6 @@ class Api:
         return {"ok": False, "message": message, "state": self.get_state()}
 
     def _command(self, module: str, args: list[str]) -> str:
-        command = [sys.executable, "-m", module, *args]
         display_args = list(args)
         sensitive_options = {
             "--udid", "--chip-id", "--phone", "--email", "--guid",
@@ -127,15 +128,44 @@ class Api:
                 display_args[verify_index + 1] = "••••"
         display = "$ -m " + module + " " + " ".join(display_args)
         self.log += display + "\n"
-        env = os.environ.copy()
-        env["PYTHONUTF8"] = "1"
-        result = subprocess.run(command, capture_output=True, text=True, env=env)
-        # A windowed PyInstaller executable can expose either captured stream
-        # as None on Windows. Treat a missing stream as empty output.
-        output = ((result.stdout or "") + (result.stderr or "")).strip()
-        if result.returncode not in (0, 3):
+        if getattr(sys, "frozen", False):
+            returncode, stdout, stderr = self._run_embedded(module, args)
+        else:
+            command = [sys.executable, "-m", module, *args]
+            env = os.environ.copy()
+            env["PYTHONUTF8"] = "1"
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
+            returncode = result.returncode
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
+        output = (stdout + stderr).strip()
+        if returncode not in (0, 3):
             raise RuntimeError(output or "The operation failed.")
         return output
+
+    @staticmethod
+    def _run_embedded(module: str, args: list[str]) -> tuple[int, str, str]:
+        """Run a CLI inside a frozen windowed app where stdio is unavailable."""
+        if module == "deeptesting.cli":
+            from .cli import main as command_main
+        elif module == "deeptesting.token_cli":
+            from .token_cli import main as command_main
+        else:
+            raise RuntimeError(f"Unsupported embedded command module: {module}")
+
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+        previous_argv = sys.argv
+        sys.argv = [module, *args]
+        try:
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                try:
+                    returncode = command_main()
+                except SystemExit as exc:
+                    returncode = exc.code if isinstance(exc.code, int) else 1
+        finally:
+            sys.argv = previous_argv
+        return int(returncode or 0), stdout.getvalue(), stderr.getvalue()
 
     @staticmethod
     def _redact(value: str) -> str:
