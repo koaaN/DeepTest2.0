@@ -1277,6 +1277,12 @@ class DeepTestingApp(tk.Tk):
         if error:
             self._connected_device_info = ("Android device", "", "", "")
             self.connected_device_status.configure(text=f"○  {error}", fg=self.WARNING)
+            self._helper_device_model = ""
+            self._helper_device_serial = ""
+            self._helper_readiness_root = ""
+            self._helper_readiness_code = ""
+            if hasattr(self, "helper_readiness"):
+                self.helper_readiness.configure(text="No connected device", fg=self.WARNING)
             return
         target_name = model
         if prj_id == "24831":
