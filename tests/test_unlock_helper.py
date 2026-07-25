@@ -10,6 +10,7 @@ from deeptesting.unlock_helper import (
     UnlockHelperError,
     helper_jar_path,
     inspect_device,
+    unlock_code_chip_id,
     validate_unlock_code,
 )
 
@@ -17,6 +18,11 @@ from deeptesting.unlock_helper import (
 class UnlockCodeValidationTests(unittest.TestCase):
     def test_accepts_and_trims_hex(self) -> None:
         self.assertEqual(validate_unlock_code("  04aB  "), "04aB")
+
+    def test_extracts_embedded_chip_id(self) -> None:
+        code = ("00" * 256) + "a1b2c3d4".encode("ascii").hex() + ("00" * 52)
+        self.assertEqual(len(code), 632)
+        self.assertEqual(unlock_code_chip_id(code), "a1b2c3d4")
 
     def test_rejects_empty_odd_or_non_hex_values(self) -> None:
         for value in ("", "abc", "zz"):
@@ -42,10 +48,11 @@ class DeviceReadinessTests(unittest.TestCase):
                 "returncode": 0,
             })(),
             type("Result", (), {"stdout": "uid=0(root)\n", "stderr": "", "returncode": 0})(),
+            type("Result", (), {"stdout": "0xa1b2c3d4\n", "stderr": "", "returncode": 0})(),
         ]
         self.assertEqual(
             inspect_device(),
-            DeviceReadiness(serial="ABC", model="PLK110", rooted=True),
+            DeviceReadiness(serial="ABC", model="PLK110", rooted=True, chip_id="a1b2c3d4"),
         )
 
     @patch("deeptesting.unlock_helper._adb_path", return_value="/usr/bin/adb")

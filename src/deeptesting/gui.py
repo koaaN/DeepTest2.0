@@ -16,7 +16,12 @@ from urllib.parse import parse_qs, urlparse
 
 from .heytap_models import HeyTapDeviceProfile
 from .hybrid_verify import HybridVerifier
-from .unlock_helper import UnlockHelperError, apply_authorization, inspect_device
+from .unlock_helper import (
+    UnlockHelperError,
+    apply_authorization,
+    inspect_device,
+    unlock_code_chip_id,
+)
 
 
 APP_DIR = Path.home() / ".config" / "deeptesting"
@@ -1182,20 +1187,47 @@ class DeepTestingApp(tk.Tk):
         if not result:
             return
         code = result[0]
+        try:
+            embedded_chip_id = unlock_code_chip_id(code)
+            device = inspect_device()
+        except UnlockHelperError as exc:
+            messagebox.showerror(
+                "Could not validate unlock code",
+                str(exc),
+                parent=self,
+            )
+            return
+        device_chip_id = str(device.chip_id).lower().removeprefix("0x")
+        if not device_chip_id:
+            messagebox.showerror(
+                "Could not validate unlock code",
+                "Could not read ro.boot.chipid from the connected phone.",
+                parent=self,
+            )
+            return
+        if embedded_chip_id != device_chip_id:
+            messagebox.showerror(
+                "Unlock code does not match",
+                "This unlock code was issued for a different Chip ID.",
+                parent=self,
+            )
+            return
         self.last_unlock_code = code
         self.manual_unlock_code = True
         self.manual_unlock_code_value = code
         self.apply_helper_button.configure(state="normal")
-        self._helper_readiness_code = "Unlock code ready"
+        self._helper_device_model = device.model
+        self._helper_device_serial = device.serial
+        self._helper_readiness_code = "Unlock code ready & validated"
         if hasattr(self, "_helper_readiness_root"):
             self._helper_readiness_color = self.SUCCESS if self._helper_readiness_root == "root ready" else self.WARNING
             self._render_helper_readiness()
         else:
             self.helper_readiness.configure(
-                text="Unlock code ready  •  run Check requirements",
+                text="Unlock code ready & validated  •  run Check requirements",
                 fg=self.WARNING,
             )
-        self.status.configure(text="Manual unlock code loaded")
+        self.status.configure(text="Manual unlock code loaded and validated")
         self.status_dot.configure(fg=self.SUCCESS)
 
     def _show_device_result(self, endpoint: str, payload: dict[str, object]) -> None:
@@ -1284,9 +1316,28 @@ class DeepTestingApp(tk.Tk):
         self._helper_device_serial = serial
         rooted = bool(getattr(device, "rooted", False))
         unlock_code = self._effective_unlock_code()
-        code_status = "Unlock code ready" if unlock_code else "run Check status to load code"
+        code_validated = False
+        if unlock_code:
+            try:
+                embedded_chip_id = unlock_code_chip_id(unlock_code)
+            except UnlockHelperError:
+                code_status = "Unlock code invalid"
+            else:
+                device_chip_id = str(getattr(device, "chip_id", "")).lower().removeprefix("0x")
+                if not device_chip_id:
+                    code_status = "Could not read device Chip ID"
+                elif embedded_chip_id == device_chip_id:
+                    code_status = "Unlock code ready & validated"
+                    code_validated = True
+                else:
+                    code_status = "Unlock code does not match this device"
+        else:
+            code_status = "run Check status to load code"
         root_status = "root ready" if rooted else "root permission missing"
-        color = self.SUCCESS if rooted and unlock_code else self.WARNING
+        color = self.SUCCESS if rooted and code_validated else self.WARNING
+        self.apply_helper_button.configure(
+            state="normal" if code_validated else "disabled"
+        )
         self._helper_readiness_root = root_status
         self._helper_readiness_code = code_status
         self._helper_readiness_color = color
