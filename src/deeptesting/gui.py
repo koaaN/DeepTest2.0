@@ -486,6 +486,19 @@ class DeepTestingApp(tk.Tk):
         self.root_version_menu = ttk.Combobox(root_card, textvariable=self.root_version,
             values=("No version available",), state="disabled", width=14, style="Modern.TCombobox")
         self.root_version_menu.grid(row=0, column=0, sticky="w")
+        tk.Label(
+            root_card,
+            text=(
+                "Temporary root may take several attempts. Keep the phone awake on the home "
+                "screen; disabling System Optimization may improve reliability. If the phone "
+                "reboots, unlock it and try again."
+            ),
+            bg=self.SURFACE,
+            fg=self.WARNING,
+            font=("DejaVu Sans", 8),
+            justify="left",
+            wraplength=900,
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(10, 0))
 
         helper = self._card(
             content,
