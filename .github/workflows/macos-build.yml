@@ -1,0 +1,52 @@
+name: macOS build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13   # Intel
+            arch: x86_64
+          - runner: macos-14   # Apple Silicon
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Build app bundle
+        run: |
+          pyinstaller --noconfirm --clean --windowed \
+            --name DeepTest2 \
+            --add-data 'android-helper/assets:android-helper/assets' \
+            --add-data 'src/deeptesting/assets:deeptesting/assets' \
+            --paths src launcher.py
+
+      - name: Package artifact
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/DeepTest2.app" "DeepTest2-macos-${{ matrix.arch }}.zip"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeepTest2-macOS-${{ matrix.arch }}
+          path: DeepTest2-macos-${{ matrix.arch }}.zip

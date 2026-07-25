@@ -55,13 +55,36 @@ def helper_jar_path() -> Path:
     return path
 
 
+def resolve_adb() -> str | None:
+    """Locate an adb binary, or return None if there is none.
+
+    A macOS .app (or a Windows shortcut) launched from Finder/Explorer inherits a
+    minimal PATH that omits Homebrew and the Android SDK, so shutil.which alone is
+    not enough there. Order: PATH first (respects the user's own install and its
+    native architecture), then common absolute install locations, then a bundled
+    or working-directory platform-tools copy as an offline fallback.
+    """
+    import sys
+
+    candidates: list[Path] = []
+    candidates.extend(Path(item) for item in (shutil.which("adb"), shutil.which("adb.exe")) if item)
+    candidates.extend(
+        Path(location).expanduser()
+        for location in (
+            "/opt/homebrew/bin/adb",                       # Apple Silicon Homebrew
+            "/usr/local/bin/adb",                          # Intel Homebrew / manual install
+            "~/Library/Android/sdk/platform-tools/adb",    # Android Studio (macOS)
+            "~/Android/Sdk/platform-tools/adb",            # Android Studio (Linux)
+        )
+    )
+    bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
+    for base in (bundle_root, Path.cwd()):
+        candidates.extend(base / "platform-tools" / name for name in ("adb", "adb.exe"))
+    return next((str(path) for path in candidates if path.is_file()), None)
+
+
 def _adb_path() -> str:
-    candidates = []
-    bundle_root = Path(getattr(__import__("sys"), "_MEIPASS", Path(__file__).resolve().parents[2]))
-    candidates.extend((bundle_root / "platform-tools" / name for name in ("adb", "adb.exe")))
-    candidates.extend((Path.cwd() / "platform-tools" / name for name in ("adb", "adb.exe")))
-    candidates.extend((Path(item) for item in (shutil.which("adb"), shutil.which("adb.exe")) if item))
-    adb = next((str(path) for path in candidates if path.is_file()), None)
+    adb = resolve_adb()
     if not adb:
         raise UnlockHelperError("ADB is not installed or is not available in PATH.")
     return adb

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import sys
 import threading
@@ -16,7 +15,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .heytap_models import HeyTapDeviceProfile
 from .hybrid_verify import HybridVerifier
-from .unlock_helper import UnlockHelperError, apply_authorization, inspect_device
+from .unlock_helper import UnlockHelperError, apply_authorization, inspect_device, resolve_adb
 
 
 APP_DIR = Path.home() / ".config" / "deeptesting"
@@ -572,7 +571,7 @@ class DeepTestingApp(tk.Tk):
             return
         try:
             device = inspect_device()
-            adb = shutil.which("adb")
+            adb = resolve_adb()
             if not adb:
                 raise UnlockHelperError("ADB is not installed or unavailable.")
             result = subprocess.run([adb, "-s", device.serial, "reboot", "bootloader"], capture_output=True, text=True, timeout=15)
@@ -926,7 +925,7 @@ class DeepTestingApp(tk.Tk):
                 error.configure(text="Could not open the browser. The verification URL was copied.")
 
         def open_on_phone() -> None:
-            adb = shutil.which("adb")
+            adb = resolve_adb()
             if not adb:
                 self.clipboard_clear()
                 self.clipboard_append(url)
@@ -1189,7 +1188,7 @@ class DeepTestingApp(tk.Tk):
         self._show_page("device")
 
     def _detect_chip_id(self) -> None:
-        adb = shutil.which("adb")
+        adb = resolve_adb()
         if not adb:
             messagebox.showerror("ADB not found", "Install Android platform-tools and reconnect the phone.")
             return
@@ -1223,7 +1222,7 @@ class DeepTestingApp(tk.Tk):
         threading.Thread(target=worker, daemon=True).start()
 
     def _refresh_connected_device(self) -> None:
-        adb = shutil.which("adb")
+        adb = resolve_adb()
         if not adb:
             self.connected_device_status.configure(
                 text="○  ADB not installed", fg=self.DANGER

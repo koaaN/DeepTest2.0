@@ -34,7 +34,31 @@ Open the repository’s [Releases](https://github.com/koaaN/DeepTest2.0/releases
 3. Open the extracted `DeepTest2` folder.
 4. Double-click `DeepTest2.exe`.
 
-The Windows release includes Platform Tools and `adb.exe`. The Linux release uses system ADB when available; install Android Platform Tools if ADB is not already on your `PATH`.
+### macOS
+
+1. Download `DeepTest2-macos-arm64.zip` (Apple Silicon) or `DeepTest2-macos-x86_64.zip` (Intel).
+2. Extract it — double-click in Finder, or:
+
+   ```bash
+   unzip DeepTest2-macos-arm64.zip
+   ```
+
+3. Install ADB if you don't already have it:
+
+   ```bash
+   brew install android-platform-tools
+   ```
+
+4. The app is not notarized, so macOS Gatekeeper quarantines it on first launch. Remove the quarantine flag, then open it:
+
+   ```bash
+   xattr -dr com.apple.quarantine DeepTest2.app
+   open DeepTest2.app
+   ```
+
+   (Alternatively, right-click the app, choose **Open**, and confirm once.)
+
+The Windows release includes Platform Tools and `adb.exe`. The Linux and macOS releases use system ADB; install Android Platform Tools (`brew install android-platform-tools` on macOS) if ADB is not already available. The app also checks common install locations such as Homebrew and the Android SDK, so it finds ADB even when launched from Finder with a minimal `PATH`.
 
 ## Before connecting a phone
 
@@ -62,6 +86,7 @@ Login and authorization data is stored locally under:
 
 ```text
 Linux:   /home/<user>/.config/deeptesting/
+macOS:   /Users/<user>/.config/deeptesting/
 Windows: C:\Users\<user>\.config\deeptesting\
 ```
 
@@ -69,4 +94,4 @@ Treat these JSON files as secrets, keep a secure backup somewhere safe, and neve
 
 ## Building from source
 
-The repository includes separate GitHub Actions workflows for Linux and Windows, plus a combined release workflow.
+The repository includes separate GitHub Actions workflows for Linux, macOS, and Windows, plus a combined release workflow that builds and publishes all three.
