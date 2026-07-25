@@ -6,6 +6,10 @@ This is an independent GUI built on the protocol implementation and research fro
 
 ## Download a ready-to-run release
 
+### Current device support
+
+The root-helper workflow currently supports only the OnePlus 15 on builds **16.0.8.300** and **16.0.9.400**. Other devices or build versions are not supported yet.
+
 Open the repository’s [Releases](https://github.com/koaaN/DeepTest2.0/releases) page and download the archive for your operating system.
 
 ### Linux
