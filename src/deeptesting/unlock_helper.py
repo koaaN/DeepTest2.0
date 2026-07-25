@@ -134,4 +134,32 @@ def apply_authorization(unlock_code: str) -> str:
     written = _run([adb, "-s", device.serial, "shell", write_cmd], timeout=90)
     if written.returncode != 0:
         raise UnlockHelperError("The patched reserve image could not be written to the phone.")
-    return f"Patched and flashed oplusreserve1 ({len(bytes.fromhex(code))} bytes at 0x{RESERVE_OFFSET:X}). Backup: {local_backup}"
+
+    temporary_root_files = (
+        SU_PATH,
+        "/data/local/tmp/su_daemon.log",
+        "/data/local/tmp/temp_su.sock",
+    )
+    root_file_list = " ".join(temporary_root_files)
+    release_files = _run(
+        [
+            adb, "-s", device.serial, "shell",
+            f"{SU_PATH} -c 'chown shell:shell {root_file_list}'",
+        ],
+        timeout=20,
+    )
+    cleanup = _run(
+        [adb, "-s", device.serial, "shell", f"rm -f {root_file_list}"],
+        timeout=20,
+    )
+    cleanup_complete = release_files.returncode == 0 and cleanup.returncode == 0
+    cleanup_status = (
+        "Temporary root cleanup: complete."
+        if cleanup_complete
+        else "Temporary root cleanup: incomplete; reboot the phone before continuing."
+    )
+    return (
+        f"Patched and flashed oplusreserve1 "
+        f"({len(bytes.fromhex(code))} bytes at 0x{RESERVE_OFFSET:X}). "
+        f"Backup: {local_backup}\n{cleanup_status}"
+    )
