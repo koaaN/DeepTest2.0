@@ -1,14 +1,14 @@
-name: Build and release
+name: Build Windows and Linux release
 
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag, for example v1.0.1"
+        description: "Release tag, for example V1.1.0"
         required: true
-        default: "v1.0.1"
+        default: "V1.1.0"
   push:
-    tags: ["v*"]
+    tags: ["v*", "V*"]
 
 permissions:
   contents: write
