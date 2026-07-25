@@ -24,6 +24,7 @@ class DeviceReadiness:
     serial: str
     model: str
     rooted: bool
+    chip_id: str = ""
 
 
 def validate_unlock_code(value: str) -> str:
@@ -31,6 +32,24 @@ def validate_unlock_code(value: str) -> str:
     if not code or len(code) % 2 or not _HEX.fullmatch(code):
         raise UnlockHelperError("The issued unlock code is not valid even-length hexadecimal data.")
     return code
+
+
+def unlock_code_chip_id(value: str) -> str:
+    code = validate_unlock_code(value)
+    if len(code) != 632:
+        raise UnlockHelperError("The unlock code must contain exactly 632 hexadecimal characters.")
+    try:
+        chip_id = bytes.fromhex(code[512:528]).decode("ascii")
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise UnlockHelperError("The unlock code does not contain a valid embedded Chip ID.") from exc
+    if not re.fullmatch(r"[0-9a-fA-F]{8}", chip_id):
+        raise UnlockHelperError("The unlock code does not contain a valid embedded Chip ID.")
+    return chip_id.lower()
+
+
+def _normalize_chip_id(value: str) -> str:
+    chip_id = value.strip().lower()
+    return chip_id[2:] if chip_id.startswith("0x") else chip_id
 
 
 def patch_reserve_image(image: Path, unlock_code: str) -> int:
@@ -120,12 +139,21 @@ def inspect_device() -> DeviceReadiness:
     serial, model = available[0]
     root = _run([adb, "-s", serial, "shell", f"{SU_PATH} -c 'id'"])
     rooted = root.returncode == 0 and "uid=0" in root.stdout
-    return DeviceReadiness(serial=serial, model=model, rooted=rooted)
+    chip = _run([adb, "-s", serial, "shell", "getprop", "ro.boot.chipid"])
+    chip_id = _normalize_chip_id(chip.stdout) if chip.returncode == 0 else ""
+    return DeviceReadiness(serial=serial, model=model, rooted=rooted, chip_id=chip_id)
 
 
 def apply_authorization(unlock_code: str) -> str:
     code = validate_unlock_code(unlock_code)
     device = inspect_device()
+    embedded_chip_id = unlock_code_chip_id(code)
+    if not device.chip_id:
+        raise UnlockHelperError("Could not read ro.boot.chipid from the connected phone.")
+    if embedded_chip_id != device.chip_id:
+        raise UnlockHelperError(
+            "The unlock code was issued for a different Chip ID and will not be written."
+        )
     if not device.rooted:
         raise UnlockHelperError(
             "Root access is required. Grant the ADB shell root permission in your root manager."
@@ -157,4 +185,32 @@ def apply_authorization(unlock_code: str) -> str:
     written = _run([adb, "-s", device.serial, "shell", write_cmd], timeout=90)
     if written.returncode != 0:
         raise UnlockHelperError("The patched reserve image could not be written to the phone.")
-    return f"Patched and flashed oplusreserve1 ({len(bytes.fromhex(code))} bytes at 0x{RESERVE_OFFSET:X}). Backup: {local_backup}"
+
+    temporary_root_files = (
+        SU_PATH,
+        "/data/local/tmp/su_daemon.log",
+        "/data/local/tmp/temp_su.sock",
+    )
+    root_file_list = " ".join(temporary_root_files)
+    release_files = _run(
+        [
+            adb, "-s", device.serial, "shell",
+            f"{SU_PATH} -c 'chown shell:shell {root_file_list}'",
+        ],
+        timeout=20,
+    )
+    cleanup = _run(
+        [adb, "-s", device.serial, "shell", f"rm -f {root_file_list}"],
+        timeout=20,
+    )
+    cleanup_complete = release_files.returncode == 0 and cleanup.returncode == 0
+    cleanup_status = (
+        "Temporary root cleanup: complete."
+        if cleanup_complete
+        else "Temporary root cleanup: incomplete; reboot the phone before continuing."
+    )
+    return (
+        f"Patched and flashed oplusreserve1 "
+        f"({len(bytes.fromhex(code))} bytes at 0x{RESERVE_OFFSET:X}). "
+        f"Backup: {local_backup}\n{cleanup_status}"
+    )

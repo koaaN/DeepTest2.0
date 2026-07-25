@@ -15,7 +15,13 @@ from urllib.parse import parse_qs, urlparse
 
 from .heytap_models import HeyTapDeviceProfile
 from .hybrid_verify import HybridVerifier
-from .unlock_helper import UnlockHelperError, apply_authorization, inspect_device, resolve_adb
+from .unlock_helper import (
+    UnlockHelperError,
+    apply_authorization,
+    inspect_device,
+    resolve_adb,
+    unlock_code_chip_id,
+)
 
 
 APP_DIR = Path.home() / ".config" / "deeptesting"
@@ -46,6 +52,8 @@ class DeepTestingApp(tk.Tk):
         self.busy = False
         self.active_operation = ""
         self.last_unlock_code = ""
+        self.manual_unlock_code = False
+        self.manual_unlock_code_value = ""
         self.current_page = "account"
         self.auto_resume_attempts: set[str] = set()
         self.nav_buttons: dict[str, ttk.Button] = {}
@@ -493,6 +501,19 @@ class DeepTestingApp(tk.Tk):
         self.root_version_menu = ttk.Combobox(root_card, textvariable=self.root_version,
             values=("No version available",), state="disabled", width=14, style="Modern.TCombobox")
         self.root_version_menu.grid(row=0, column=0, sticky="w")
+        tk.Label(
+            root_card,
+            text=(
+                "Temporary root may take several attempts. Keep the phone awake on the home "
+                "screen; disabling System Optimization may improve reliability. If the phone "
+                "reboots, unlock it and try again."
+            ),
+            bg=self.SURFACE,
+            fg=self.WARNING,
+            font=("DejaVu Sans", 8),
+            justify="left",
+            wraplength=900,
+        ).grid(row=1, column=0, columnspan=3, sticky="w", pady=(10, 0))
 
         helper = self._card(
             content,
@@ -519,7 +540,7 @@ class DeepTestingApp(tk.Tk):
         )
         self.helper_readiness.pack(anchor="w", padx=15, pady=(0, 12))
         helper_buttons = tk.Frame(helper, bg=self.SURFACE)
-        helper_buttons.grid(row=1, column=0, columnspan=2, sticky="w")
+        helper_buttons.grid(row=1, column=0, columnspan=2, sticky="ew")
         self._button(helper_buttons, "Check requirements", self._check_unlock_helper).pack(side="left")
         self.apply_helper_button = self._button(
             helper_buttons,
@@ -529,6 +550,9 @@ class DeepTestingApp(tk.Tk):
         )
         self.apply_helper_button.pack(side="left", padx=9)
         self.apply_helper_button.configure(state="disabled")
+        self._button(
+            helper_buttons, "Enter unlock code", self._enter_unlock_code
+        ).pack(side="right")
         tk.Label(
             helper,
             text="Creates a local backup first. This writes oplusreserve1 but does not reboot, wipe, or unlock bootloader.",
@@ -557,9 +581,16 @@ class DeepTestingApp(tk.Tk):
         def worker() -> None:
             try:
                 command = ["cmd", "/c", str(script)] if os.name == "nt" else ["sh", str(script)]
+                helper_env = os.environ.copy()
+                if os.name != "nt" and getattr(sys, "frozen", False):
+                    original_library_path = helper_env.pop("LD_LIBRARY_PATH_ORIG", "")
+                    if original_library_path:
+                        helper_env["LD_LIBRARY_PATH"] = original_library_path
+                    else:
+                        helper_env.pop("LD_LIBRARY_PATH", None)
                 result = subprocess.run(
                     command, cwd=str(script_dir),
-                    capture_output=True, text=True,
+                    capture_output=True, text=True, env=helper_env,
                 )
                 output = (result.stdout + result.stderr).strip().lower()
                 ok = result.returncode == 0 and ("root complete" in output or "uid=0(root)" in output)
@@ -1022,11 +1053,191 @@ class DeepTestingApp(tk.Tk):
         self._run(args, f"Running {endpoint}…")
 
     def _copy_unlock_code(self) -> None:
-        if not self.last_unlock_code:
+        code = self._effective_unlock_code()
+        if not code:
             return
         self.clipboard_clear()
-        self.clipboard_append(self.last_unlock_code)
+        self.clipboard_append(code)
         self.status.configure(text="Unlock code copied to clipboard")
+        self.status_dot.configure(fg=self.SUCCESS)
+
+    def _effective_unlock_code(self) -> str:
+        return self.manual_unlock_code_value or self.last_unlock_code
+
+    def _enter_unlock_code(self) -> None:
+        dialog = tk.Toplevel(self)
+        dialog.title("Enter unlock code")
+        dialog.configure(bg=self.SURFACE)
+        dialog.transient(self)
+
+        tk.Label(
+            dialog,
+            text="Enter the 632-character hexadecimal unlock code",
+            bg=self.SURFACE,
+            fg=self.TEXT,
+            font=("DejaVu Sans", 11, "bold"),
+        ).pack(anchor="w", padx=20, pady=(18, 5))
+        tk.Label(
+            dialog,
+            text="Only hexadecimal characters 0–9 and A–F are accepted.",
+            bg=self.SURFACE,
+            fg=self.MUTED,
+            font=("DejaVu Sans", 9),
+        ).pack(anchor="w", padx=20, pady=(0, 12))
+
+        result: list[str] = []
+
+        entry = tk.Entry(
+            dialog,
+            bg=self.SURFACE_2,
+            fg=self.TEXT,
+            insertbackground=self.TEXT,
+            relief="flat",
+            font=("DejaVu Sans Mono", 9),
+            width=82,
+        )
+        entry.pack(fill="x", padx=20, ipady=9)
+
+        footer = tk.Frame(dialog, bg=self.SURFACE)
+        footer.pack(fill="x", padx=20, pady=16)
+        count_label = tk.Label(
+            footer, text="0 / 632", bg=self.SURFACE, fg=self.WARNING,
+            font=("DejaVu Sans", 9),
+        )
+        count_label.pack(side="left")
+
+        def accept() -> None:
+            code = entry.get()
+            if len(code) == 632:
+                result.append(code)
+                dialog.destroy()
+
+        load_button = self._button(footer, "Load code", accept, primary=True)
+        load_button.pack(side="right")
+        load_button.configure(state="disabled")
+        self._button(footer, "Cancel", dialog.destroy).pack(side="right", padx=(0, 8))
+        self._button(footer, "Clear", lambda: entry.delete(0, "end")).pack(
+            side="right", padx=(0, 8)
+        )
+
+        def validate_input(candidate: str) -> bool:
+            return len(candidate) <= 632 and re.fullmatch(r"[0-9a-fA-F]*", candidate) is not None
+
+        def refresh_input_state() -> None:
+            if not dialog.winfo_exists():
+                return
+            length = len(entry.get())
+            ready = length == 632
+            count_label.configure(
+                text=f"{length} / 632",
+                fg=self.SUCCESS if ready else self.WARNING,
+            )
+            load_button.configure(state="normal" if ready else "disabled")
+            dialog.after(75, refresh_input_state)
+
+        entry.configure(
+            validate="key",
+            validatecommand=(dialog.register(validate_input), "%P"),
+        )
+        dialog.after(75, refresh_input_state)
+
+        def select_all(_event: object = None) -> str:
+            entry.selection_range(0, "end")
+            entry.icursor("end")
+            return "break"
+
+        def paste_code(_event: object = None) -> str:
+            entry.focus_force()
+            dialog.update_idletasks()
+            before = entry.get()
+
+            def native_paste() -> None:
+                entry.focus_force()
+                entry.selection_range(0, "end")
+                entry.event_generate("<<Paste>>")
+
+            def fallback_paste() -> None:
+                if entry.get() == before:
+                    native_paste()
+
+            dialog.after(20, native_paste)
+            dialog.after(150, fallback_paste)
+            return "break"
+
+        entry.bind("<Control-a>", select_all)
+        entry.bind("<Control-A>", select_all)
+        entry.bind("<Control-v>", paste_code)
+        entry.bind("<Control-V>", paste_code)
+        dialog.bind("<Control-a>", select_all)
+        dialog.bind("<Control-A>", select_all)
+        dialog.bind("<Control-v>", paste_code)
+        dialog.bind("<Control-V>", paste_code)
+        paste_button = self._button(footer, "Paste clipboard", paste_code)
+        paste_button.bind("<ButtonPress-1>", paste_code)
+        paste_button.pack(side="left", padx=(12, 0))
+        dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
+        dialog.bind("<Escape>", lambda _event: dialog.destroy())
+        dialog.bind("<Return>", lambda _event: accept())
+        dialog.update_idletasks()
+        width = 820
+        height = 230
+        x = self.winfo_rootx() + max(20, (self.winfo_width() - width) // 2)
+        y = self.winfo_rooty() + max(40, (self.winfo_height() - height) // 2)
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
+        dialog.resizable(False, False)
+        dialog.lift()
+        dialog.wait_visibility()
+        dialog.grab_set()
+        entry.focus_force()
+        dialog.update()
+        dialog.after(150, entry.focus_force)
+        dialog.after(400, entry.focus_force)
+        self.wait_window(dialog)
+
+        if not result:
+            return
+        code = result[0]
+        try:
+            embedded_chip_id = unlock_code_chip_id(code)
+            device = inspect_device()
+        except UnlockHelperError as exc:
+            messagebox.showerror(
+                "Could not validate unlock code",
+                str(exc),
+                parent=self,
+            )
+            return
+        device_chip_id = str(device.chip_id).lower().removeprefix("0x")
+        if not device_chip_id:
+            messagebox.showerror(
+                "Could not validate unlock code",
+                "Could not read ro.boot.chipid from the connected phone.",
+                parent=self,
+            )
+            return
+        if embedded_chip_id != device_chip_id:
+            messagebox.showerror(
+                "Unlock code does not match",
+                "This unlock code was issued for a different Chip ID.",
+                parent=self,
+            )
+            return
+        self.last_unlock_code = code
+        self.manual_unlock_code = True
+        self.manual_unlock_code_value = code
+        self.apply_helper_button.configure(state="normal")
+        self._helper_device_model = device.model
+        self._helper_device_serial = device.serial
+        self._helper_readiness_code = "Unlock code ready & validated"
+        if hasattr(self, "_helper_readiness_root"):
+            self._helper_readiness_color = self.SUCCESS if self._helper_readiness_root == "root ready" else self.WARNING
+            self._render_helper_readiness()
+        else:
+            self.helper_readiness.configure(
+                text="Unlock code ready & validated  •  run Check requirements",
+                fg=self.WARNING,
+            )
+        self.status.configure(text="Manual unlock code loaded and validated")
         self.status_dot.configure(fg=self.SUCCESS)
 
     def _show_device_result(self, endpoint: str, payload: dict[str, object]) -> None:
@@ -1045,11 +1256,13 @@ class DeepTestingApp(tk.Tk):
 
         if unlock_code:
             self.last_unlock_code = unlock_code
+            self.manual_unlock_code = False
+            self.manual_unlock_code_value = ""
             self.apply_helper_button.configure(state="normal")
             title = "Unlock approved — code ready"
             detail = "Your signed unlock authorization was issued. Copy it and keep it private."
             self.copy_code_button.pack(side="right", padx=20, pady=15)
-        else:
+        elif not self.manual_unlock_code:
             self.last_unlock_code = ""
             self.apply_helper_button.configure(state="disabled")
             self.copy_code_button.pack_forget()
@@ -1112,9 +1325,29 @@ class DeepTestingApp(tk.Tk):
         self._helper_device_model = model
         self._helper_device_serial = serial
         rooted = bool(getattr(device, "rooted", False))
-        code_status = "Unlock code ready" if self.last_unlock_code else "run Check status to load code"
+        unlock_code = self._effective_unlock_code()
+        code_validated = False
+        if unlock_code:
+            try:
+                embedded_chip_id = unlock_code_chip_id(unlock_code)
+            except UnlockHelperError:
+                code_status = "Unlock code invalid"
+            else:
+                device_chip_id = str(getattr(device, "chip_id", "")).lower().removeprefix("0x")
+                if not device_chip_id:
+                    code_status = "Could not read device Chip ID"
+                elif embedded_chip_id == device_chip_id:
+                    code_status = "Unlock code ready & validated"
+                    code_validated = True
+                else:
+                    code_status = "Unlock code does not match this device"
+        else:
+            code_status = "run Check status to load code"
         root_status = "root ready" if rooted else "root permission missing"
-        color = self.SUCCESS if rooted and self.last_unlock_code else self.WARNING
+        color = self.SUCCESS if rooted and code_validated else self.WARNING
+        self.apply_helper_button.configure(
+            state="normal" if code_validated else "disabled"
+        )
         self._helper_readiness_root = root_status
         self._helper_readiness_code = code_status
         self._helper_readiness_color = color
@@ -1130,10 +1363,11 @@ class DeepTestingApp(tk.Tk):
             self.helper_readiness.configure(text=f"{model} ({shown})  •  {root_status}  •  {code_status}", fg=self._helper_readiness_color)
 
     def _apply_unlock_authorization(self) -> None:
-        if not self.last_unlock_code:
+        code = self._effective_unlock_code()
+        if not code:
             messagebox.showwarning(
                 "Unlock code not loaded",
-                "Run Check status or Get unlock code first so DeepTest can load the issued code.",
+                "Run Check status, Get unlock code, or enter the unlock code manually first.",
             )
             return
         if self.busy:
@@ -1146,7 +1380,6 @@ class DeepTestingApp(tk.Tk):
         ):
             return
 
-        code = self.last_unlock_code
         self.reboot_bootloader_button.configure(state="disabled")
         self.busy = True
         self.status.configure(text="Applying unlock authorization to the phone…")
