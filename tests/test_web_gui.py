@@ -1,4 +1,6 @@
 from types import SimpleNamespace
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 
 from deeptesting.web_gui import Api, DEVICE_PROFILES
@@ -66,3 +68,45 @@ class CommandOutputTests(TestCase):
             output = api._command("deeptesting.cli", ["get-apply-status"])
 
         self.assertEqual(output, "captured response")
+
+
+class CustomPreloadTests(TestCase):
+    def test_select_custom_preload_updates_session_state(self) -> None:
+        with TemporaryDirectory() as directory:
+            preload = Path(directory) / "mine.so"
+            preload.write_bytes(b"payload")
+            window = mock.Mock()
+            window.create_file_dialog.return_value = (str(preload),)
+            with mock.patch.object(Api, "_save"), mock.patch(
+                "deeptesting.web_gui.webview.windows", [window]
+            ):
+                api = Api()
+                result = api.select_custom_preload()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["state"]["custom_preload_name"], "mine.so")
+
+    def test_non_so_file_is_rejected(self) -> None:
+        with TemporaryDirectory() as directory:
+            preload = Path(directory) / "mine.txt"
+            preload.write_bytes(b"payload")
+            window = mock.Mock()
+            window.create_file_dialog.return_value = (str(preload),)
+            with mock.patch.object(Api, "_save"), mock.patch(
+                "deeptesting.web_gui.webview.windows", [window]
+            ):
+                api = Api()
+                result = api.select_custom_preload()
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["state"]["custom_preload_name"], "")
+
+    def test_bundled_preload_can_be_restored(self) -> None:
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.custom_preload = Path("/tmp/custom.so")
+
+        result = api.use_bundled_preload()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["state"]["custom_preload_name"], "")

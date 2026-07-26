@@ -7,8 +7,9 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import uuid
-from contextlib import redirect_stderr, redirect_stdout
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from pathlib import Path
 
 import webview
@@ -80,6 +81,7 @@ class Api:
     def __init__(self) -> None:
         self.settings = dict(DEFAULTS)
         self.unlock_code = ""
+        self.custom_preload: Path | None = None
         self.log = "DeepTest 2.0 ready.\n"
         self.sensitive_values = True
         self.device = {
@@ -117,7 +119,36 @@ class Api:
             "versions": self._versions(), "has_code": bool(self.unlock_code),
             "log": self._visible_log(),
             "sensitive_values": self.sensitive_values,
+            "custom_preload_name": self.custom_preload.name if self.custom_preload else "",
         }
+
+    def select_custom_preload(self) -> dict:
+        try:
+            selected = webview.windows[0].create_file_dialog(
+                webview.FileDialog.OPEN,
+                allow_multiple=False,
+                file_types=("Shared library (*.so)",),
+            )
+            if not selected:
+                return {
+                    "ok": True, "message": "File selection cancelled.",
+                    "state": self.get_state(),
+                }
+            path = Path(selected[0] if isinstance(selected, (list, tuple)) else selected)
+            if path.suffix.lower() != ".so":
+                raise RuntimeError("Please select a .so file.")
+            if not path.is_file():
+                raise RuntimeError("The selected preload.so file does not exist.")
+            self.custom_preload = path.resolve()
+            self.log += f"$ custom preload selected: {path.name}\n"
+            return self._result(f"Using custom preload: {path.name}")
+        except Exception as exc:
+            return self._error(exc)
+
+    def use_bundled_preload(self) -> dict:
+        self.custom_preload = None
+        self.log += "$ using bundled preload.so\n"
+        return self._result("Using bundled preload.so.")
 
     def set_sensitive_values(self, visible: bool) -> dict:
         self.sensitive_values = bool(visible)
@@ -374,6 +405,9 @@ class Api:
             script = directory / ("root.bat" if os.name == "nt" else "root.sh")
             if not script.is_file():
                 raise RuntimeError(f"Root helper is missing for {version}.")
+            custom_preload = self.custom_preload
+            if custom_preload and not custom_preload.is_file():
+                raise RuntimeError("The selected custom preload.so is no longer available.")
             env = os.environ.copy()
             if os.name != "nt" and getattr(sys, "frozen", False):
                 original = env.pop("LD_LIBRARY_PATH_ORIG", "")
@@ -381,25 +415,35 @@ class Api:
                     env["LD_LIBRARY_PATH"] = original
                 else:
                     env.pop("LD_LIBRARY_PATH", None)
-            command = ["cmd", "/c", str(script)] if os.name == "nt" else ["/bin/sh", str(script)]
-            process = subprocess.Popen(
-                command, cwd=directory, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, text=True, encoding="utf-8",
-                errors="replace", bufsize=1, env=env,
-            )
-            lines: list[str] = []
-            self.log += "$ root helper started…\n"
-            if process.stdout is not None:
-                for line in process.stdout:
-                    lines.append(line)
-                    self.log += line
-                    try:
-                        webview.windows[0].evaluate_js(
-                            f"appendRootLog({json.dumps(line)})"
-                        )
-                    except Exception:
-                        pass
-            return_code = process.wait()
+            with tempfile.TemporaryDirectory(prefix="deeptest-root-") if custom_preload else nullcontext(directory) as work_dir:
+                work_path = Path(work_dir)
+                active_script = script
+                if custom_preload:
+                    active_script = work_path / script.name
+                    shutil.copy2(script, active_script)
+                    shutil.copy2(custom_preload, work_path / "preload.so")
+                    self.log += f"$ using custom preload: {custom_preload.name}\n"
+                else:
+                    self.log += "$ using bundled preload.so\n"
+                command = ["cmd", "/c", str(active_script)] if os.name == "nt" else ["/bin/sh", str(active_script)]
+                process = subprocess.Popen(
+                    command, cwd=work_path, stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT, text=True, encoding="utf-8",
+                    errors="replace", bufsize=1, env=env,
+                )
+                lines: list[str] = []
+                self.log += "$ root helper started…\n"
+                if process.stdout is not None:
+                    for line in process.stdout:
+                        lines.append(line)
+                        self.log += line
+                        try:
+                            webview.windows[0].evaluate_js(
+                                f"appendRootLog({json.dumps(line)})"
+                            )
+                        except Exception:
+                            pass
+                return_code = process.wait()
             output = "".join(lines).strip()
             if return_code or ("root complete" not in output.lower() and "uid=0(root)" not in output.lower()):
                 raise RuntimeError(output or "Root helper did not complete.")
