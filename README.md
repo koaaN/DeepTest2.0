@@ -73,9 +73,22 @@ Login and authorization data is stored locally under:
 ```text
 Linux:   /home/<user>/.config/deeptesting/
 Windows: C:\Users\<user>\.config\deeptesting\
+macOS:   /Users/<user>/.config/deeptesting/
 ```
 
 Treat these JSON files as secrets, keep a secure backup somewhere safe, and never upload them. Device settings are also local and are not sent to the repository.
+
+## Backup storage
+
+Before installing unlock authorization, DeepTest saves the original `oplusreserve1` image under:
+
+```text
+Linux:   /home/<user>/.local/share/deeptest/reserve-backups/
+Windows: C:\Users\<user>\.local\share\deeptest\reserve-backups\
+macOS:   /Users/<user>/.local/share/deeptest/reserve-backups/
+```
+
+Backups are named `oplusreserve1-preunlock-<device-serial>.img`. Keep a separate copy somewhere safe and never use a backup taken from another phone.
 
 ## Building from source
 
