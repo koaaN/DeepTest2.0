@@ -19,6 +19,30 @@ class DeviceProfileTests(TestCase):
 
 class CommandOutputTests(TestCase):
     @mock.patch("deeptesting.web_gui.subprocess.run")
+    def test_sensitive_command_values_follow_visibility_setting(self, run) -> None:
+        run.return_value = SimpleNamespace(returncode=0, stdout="", stderr="")
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.settings["udid"] = "device-guid"
+        api.settings["chip_id"] = "0x12345678"
+
+        api._command(
+            "deeptesting.cli",
+            ["get-apply-status", "--udid", "device-guid", "--chip-id", "0x12345678"],
+        )
+
+        self.assertIn("--udid device-guid", api.get_state()["log"])
+        self.assertIn("--chip-id 0x12345678", api.get_state()["log"])
+        hidden = api.set_sensitive_values(False)["log"]
+        self.assertNotIn("device-guid", hidden)
+        self.assertNotIn("0x12345678", hidden)
+        self.assertIn("--udid ••••", hidden)
+        self.assertIn("--chip-id ••••", hidden)
+        shown = api.set_sensitive_values(True)["log"]
+        self.assertIn("--udid device-guid", shown)
+        self.assertIn("--chip-id 0x12345678", shown)
+
+    @mock.patch("deeptesting.web_gui.subprocess.run")
     def test_missing_windows_output_stream_is_treated_as_empty(self, run) -> None:
         run.return_value = SimpleNamespace(returncode=0, stdout=None, stderr="")
         with mock.patch.object(Api, "_save"):

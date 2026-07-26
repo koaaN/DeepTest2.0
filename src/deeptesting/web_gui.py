@@ -81,6 +81,7 @@ class Api:
         self.settings = dict(DEFAULTS)
         self.unlock_code = ""
         self.log = "DeepTest 2.0 ready.\n"
+        self.sensitive_values = True
         self.device = {
             "connected": False, "name": "No device connected", "model": "",
             "serial": "", "prjid": "", "rooted": False,
@@ -114,8 +115,13 @@ class Api:
             "settings": self.settings, "device": self.device,
             "authorized": Path(str(self.settings["token_cache"])).expanduser().is_file(),
             "versions": self._versions(), "has_code": bool(self.unlock_code),
-            "log": self.log,
+            "log": self._visible_log(),
+            "sensitive_values": self.sensitive_values,
         }
+
+    def set_sensitive_values(self, visible: bool) -> dict:
+        self.sensitive_values = bool(visible)
+        return self.get_state()
 
     def save_settings(self, values: dict) -> dict:
         if isinstance(values, dict):
@@ -127,22 +133,25 @@ class Api:
 
     def _result(self, message: str, *, output: str = "") -> dict:
         if output:
-            self.log += self._redact(output).rstrip() + "\n"
-        return {"ok": True, "message": message, "output": output, "state": self.get_state()}
+            self.log += output.rstrip() + "\n"
+        return {
+            "ok": True,
+            "message": self._redact(message),
+            "output": self._redact(output),
+            "state": self.get_state(),
+        }
 
     def _error(self, exc: Exception) -> dict:
-        message = self._redact(str(exc))
-        self.log += f"error: {message}\n"
+        raw_message = str(exc)
+        message = self._redact(raw_message)
+        self.log += f"error: {raw_message}\n"
         return {"ok": False, "message": message, "state": self.get_state()}
 
     def _command(self, module: str, args: list[str]) -> str:
         display_args = list(args)
-        sensitive_options = {
-            "--udid", "--chip-id", "--phone", "--email", "--guid",
-            "--device-id", "--ticket",
-        }
+        always_hidden_options = {"--ticket"}
         for index, item in enumerate(display_args[:-1]):
-            if item in sensitive_options:
+            if item in always_hidden_options:
                 display_args[index + 1] = "••••"
         if "verify" in display_args:
             verify_index = display_args.index("verify")
@@ -189,9 +198,22 @@ class Api:
             sys.argv = previous_argv
         return int(returncode or 0), stdout.getvalue(), stderr.getvalue()
 
-    @staticmethod
-    def _redact(value: str) -> str:
-        return value
+    def _visible_log(self) -> str:
+        return self._redact(self.log)
+
+    def _redact(self, value: str) -> str:
+        if self.sensitive_values:
+            return value
+        hidden = {
+            str(self.settings.get("udid", "")).strip(),
+            str(self.settings.get("chip_id", "")).strip(),
+            str(self.settings.get("account", "")).strip(),
+            str(self.device.get("serial", "")).strip(),
+        }
+        redacted = value
+        for secret in sorted(hidden - {""}, key=len, reverse=True):
+            redacted = redacted.replace(secret, "••••")
+        return redacted
 
     def refresh_device(self) -> dict:
         try:
