@@ -1,7 +1,20 @@
 from types import SimpleNamespace
 from unittest import TestCase, mock
 
-from deeptesting.web_gui import Api
+from deeptesting.web_gui import Api, DEVICE_PROFILES
+
+
+class DeviceProfileTests(TestCase):
+    def test_oneplus_15t_profile(self) -> None:
+        self.assertEqual(
+            DEVICE_PROFILES["25821"],
+            {
+                "name": "OnePlus 15T",
+                "model": "PLZ110",
+                "ota_version": "PLZ110_11.A.31_0310_202605280615",
+                "root_family": "15T",
+            },
+        )
 
 
 class CommandOutputTests(TestCase):

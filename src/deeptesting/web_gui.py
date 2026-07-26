@@ -35,6 +35,27 @@ DEFAULTS = {
     "token_cache": str(TOKEN_PATH),
 }
 
+DEVICE_PROFILES = {
+    "24831": {
+        "name": "OnePlus 15",
+        "model": "PLK110",
+        "ota_version": "PLK110_11.A.68_0680_202606250030",
+        "root_family": "OP15",
+    },
+    "24855": {
+        "name": "OnePlus Ace 6T",
+        "model": "PLR110",
+        "ota_version": "PLR110_11.A.62_0620_202606152334",
+        "root_family": "ACE6T",
+    },
+    "25821": {
+        "name": "OnePlus 15T",
+        "model": "PLZ110",
+        "ota_version": "PLZ110_11.A.31_0310_202605280615",
+        "root_family": "15T",
+    },
+}
+
 
 def _bundle_root() -> Path:
     return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
@@ -81,7 +102,8 @@ class Api:
         SETTINGS_PATH.write_text(json.dumps(self.settings, indent=2), encoding="utf-8")
 
     def _versions(self) -> list[str]:
-        family = {"24831": "OP15", "24855": "ACE6T"}.get(str(self.device["prjid"]))
+        profile = DEVICE_PROFILES.get(str(self.device["prjid"]))
+        family = profile["root_family"] if profile else None
         root = _bundle_root() / "android-helper" / "assets" / str(family)
         if not family or not root.is_dir():
             return []
@@ -205,13 +227,11 @@ class Api:
                 [adb, "-s", serial, "shell", "/data/local/tmp/su -c 'id'"],
                 capture_output=True, text=True, timeout=10,
             )
-            name = {"24831": "OnePlus 15", "24855": "OnePlus Ace 6T"}.get(prjid, model)
-            mapping = {
-                "24831": ("PLK110", "PLK110_11.A.68_0680_202606250030"),
-                "24855": ("PLR110", "PLR110_11.A.62_0620_202606152334"),
-            }
-            if prjid in mapping:
-                self.settings["model"], self.settings["ota_version"] = mapping[prjid]
+            profile = DEVICE_PROFILES.get(prjid)
+            name = profile["name"] if profile else model
+            if profile:
+                self.settings["model"] = profile["model"]
+                self.settings["ota_version"] = profile["ota_version"]
             if chip:
                 self.settings["chip_id"] = chip if chip.lower().startswith("0x") else f"0x{chip}"
             self.device = {
@@ -322,7 +342,8 @@ class Api:
 
     def run_root_helper(self, version: str) -> dict:
         try:
-            family = {"24831": "OP15", "24855": "ACE6T"}.get(str(self.device["prjid"]))
+            profile = DEVICE_PROFILES.get(str(self.device["prjid"]))
+            family = profile["root_family"] if profile else None
             if not family or not version:
                 raise RuntimeError("No compatible root helper is available.")
             directory = _bundle_root() / "android-helper" / "assets" / family / version

@@ -15,6 +15,7 @@ else:
 datas = [
     ('android-helper/assets/OP15', 'android-helper/assets/OP15'),
     ('android-helper/assets/ACE6T', 'android-helper/assets/ACE6T'),
+    ('android-helper/assets/15T', 'android-helper/assets/15T'),
     ('src/deeptesting/assets', 'deeptesting/assets'),
     ('src/deeptesting/web', 'deeptesting/web'),
 ]
