@@ -56,15 +56,31 @@ The Connected Device card shows the live ADB connection. Saved target-device fie
 
 ## Main workflow
 
-1. Open **Account Login** and sign in with HeyTap.
-2. Continue to **Device & unlock**.
-3. Confirm the detected device details.
-4. Run the workflow actions in order: eligibility, application, status, and unlock code.
-5. In **Gain temp root**, select the installed device version and press **Run root helper**.
-6. Press **Check requirements** to confirm that root access and the unlock code are ready.
-7. Use **Install unlock authorization** only after checking the target device and confirming the backup location.
+Use the four sections in the left workflow panel:
 
-The application creates a local `oplusreserve1` backup before applying an authorization. Review the Technical Log after each operation.
+1. **Account login**
+   - Sign in to your HeyTap account.
+   - Enter the verification code and complete any additional verification promptly.
+
+2. **Unlock application**
+   - Run **Check eligibility**, **Apply for unlock**, **Check status**, and **Get unlock code** in order.
+   - **Check status** often returns the unlock code before the application is shown as approved. If it does not, use **Get unlock code**.
+   - The status banner turns green when an unlock code is received.
+   - These server-side actions can use the saved request profile when the phone is not connected.
+
+3. **Temporary root**
+   - Connect the phone and confirm its identity in the **Connected phone** card.
+   - Select the exact installed system version and press **Run root helper**.
+   - Keep the phone awake and unlocked. Follow progress in the live output panel or open **Technical log** for full diagnostics.
+   - Continue only when DeepTest confirms that temporary root is actually available.
+
+4. **Install authorization**
+   - Press **Check requirements** to validate the connected phone, temporary root, and unlock code.
+   - All three checks must be ready before **Apply authorization to phone** becomes available.
+   - DeepTest backs up the original `oplusreserve1` image before creating and writing a patched copy.
+   - After installation succeeds, use **Reboot to bootloader** to continue.
+
+Use **Edit request profile** when detected or saved request values need adjustment. The top status bar shows the live device and account-authorization state, while **Technical log** contains commands, helper output, and server responses.
 
 ## Token storage
 
