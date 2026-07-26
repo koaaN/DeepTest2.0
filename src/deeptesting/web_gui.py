@@ -427,5 +427,11 @@ def main() -> int:
         width=1440, height=900, min_size=(1080, 700),
         background_color="#090b10",
     )
-    webview.start(gui="qt" if os.name != "nt" else None, debug=False)
+    if sys.platform == "darwin":
+        gui = "cocoa"
+    elif os.name == "nt":
+        gui = None
+    else:
+        gui = "qt"
+    webview.start(gui=gui, debug=False)
     return 0
