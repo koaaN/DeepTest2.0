@@ -49,7 +49,11 @@ def unlock_code_chip_id(value: str) -> str:
 
 def _normalize_chip_id(value: str) -> str:
     chip_id = value.strip().lower()
-    return chip_id[2:] if chip_id.startswith("0x") else chip_id
+    if chip_id.startswith("0x"):
+        chip_id = chip_id[2:]
+    if re.fullmatch(r"[0-9a-f]{1,8}", chip_id):
+        return chip_id.zfill(8)
+    return chip_id
 
 
 def patch_reserve_image(image: Path, unlock_code: str) -> int:

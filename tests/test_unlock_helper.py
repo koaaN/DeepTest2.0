@@ -40,6 +40,21 @@ class UnlockCodeValidationTests(unittest.TestCase):
 class DeviceReadinessTests(unittest.TestCase):
     @patch("deeptesting.unlock_helper._adb_path", return_value="/usr/bin/adb")
     @patch("deeptesting.unlock_helper._run")
+    def test_zero_pads_short_chip_id_to_unlock_code_width(self, run, _adb) -> None:
+        run.side_effect = [
+            type("Result", (), {
+                "stdout": "List of devices attached\nABC device product:x model:PLK110\n",
+                "stderr": "",
+                "returncode": 0,
+            })(),
+            type("Result", (), {"stdout": "uid=0(root)\n", "stderr": "", "returncode": 0})(),
+            type("Result", (), {"stdout": "0xabc1234\n", "stderr": "", "returncode": 0})(),
+        ]
+
+        self.assertEqual(inspect_device().chip_id, "0abc1234")
+
+    @patch("deeptesting.unlock_helper._adb_path", return_value="/usr/bin/adb")
+    @patch("deeptesting.unlock_helper._run")
     def test_detects_one_rooted_device(self, run, _adb) -> None:
         run.side_effect = [
             type("Result", (), {
