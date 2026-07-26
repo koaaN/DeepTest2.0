@@ -3,6 +3,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 
+from deeptesting.unlock_helper import DeviceReadiness
 from deeptesting.web_gui import Api, DEVICE_PROFILES
 
 
@@ -110,3 +111,47 @@ class CustomPreloadTests(TestCase):
 
         self.assertTrue(result["ok"])
         self.assertEqual(result["state"]["custom_preload_name"], "")
+
+
+class TemporaryRootVerificationTests(TestCase):
+    @mock.patch("deeptesting.web_gui.inspect_device")
+    def test_helper_success_requires_live_root(self, inspect) -> None:
+        inspect.return_value = DeviceReadiness(
+            serial="TEST-DEVICE", model="PLK110", rooted=False
+        )
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.device.update({"connected": True, "serial": "TEST-DEVICE"})
+
+        with self.assertRaisesRegex(RuntimeError, "temporary root is not available"):
+            api._confirm_temporary_root()
+
+        self.assertFalse(api.device["rooted"])
+
+    @mock.patch("deeptesting.web_gui.inspect_device")
+    def test_live_root_marks_phone_as_rooted(self, inspect) -> None:
+        inspect.return_value = DeviceReadiness(
+            serial="TEST-DEVICE", model="PLK110", rooted=True
+        )
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.device.update({
+            "connected": True, "serial": "TEST-DEVICE", "rooted": False,
+        })
+
+        api._confirm_temporary_root()
+
+        self.assertTrue(api.device["rooted"])
+        self.assertIn("temporary root verified", api.log)
+
+    @mock.patch("deeptesting.web_gui.inspect_device")
+    def test_changed_phone_is_rejected(self, inspect) -> None:
+        inspect.return_value = DeviceReadiness(
+            serial="OTHER-DEVICE", model="PLK110", rooted=True
+        )
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.device.update({"connected": True, "serial": "TEST-DEVICE"})
+
+        with self.assertRaisesRegex(RuntimeError, "connected phone changed"):
+            api._confirm_temporary_root()

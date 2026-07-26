@@ -395,6 +395,21 @@ class Api:
         except Exception as exc:
             return self._error(exc)
 
+    def _confirm_temporary_root(self) -> None:
+        expected_serial = str(self.device.get("serial", "")).strip()
+        live_device = inspect_device()
+        if expected_serial and live_device.serial != expected_serial:
+            raise RuntimeError(
+                "The connected phone changed while the root helper was running."
+            )
+        if not live_device.rooted:
+            raise RuntimeError(
+                "The root helper finished, but temporary root is not available. "
+                "Unlock the phone and try again."
+            )
+        self.device["rooted"] = True
+        self.log += "$ temporary root verified: uid=0(root)\n"
+
     def run_root_helper(self, version: str) -> dict:
         try:
             profile = DEVICE_PROFILES.get(str(self.device["prjid"]))
@@ -447,7 +462,8 @@ class Api:
             output = "".join(lines).strip()
             if return_code or ("root complete" not in output.lower() and "uid=0(root)" not in output.lower()):
                 raise RuntimeError(output or "Root helper did not complete.")
-            return self._result("Temporary root helper complete.")
+            self._confirm_temporary_root()
+            return self._result("Temporary root verified.")
         except Exception as exc:
             return self._error(exc)
 
