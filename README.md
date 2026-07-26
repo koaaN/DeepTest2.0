@@ -12,7 +12,7 @@ The root-helper workflow currently supports:
 
 - **OnePlus 15** (PRJ-ID `24831`, model `PLK110`) on OxygenOS builds **16.0.8.300** and **16.0.9.400**
 - **OnePlus Ace 6T** (PRJ-ID `24855`, model `PLR110`) on OxygenOS builds **16.0.8.300** and **16.0.9.401**
-- **OnePlus 15T** (PRJ-ID `25821`, model `PLZ110`) on OxygenOS build **16.0.9.400**
+- **OnePlus 15T** (PRJ-ID `25821`, model `PLZ110`) on ColorOS build **16.0.9.400**
 
 Other devices or OxygenOS build versions are not supported yet.
 
