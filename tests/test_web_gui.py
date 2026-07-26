@@ -5,6 +5,12 @@ from deeptesting.web_gui import Api, DEVICE_PROFILES
 
 
 class DeviceProfileTests(TestCase):
+    def test_disconnected_device_has_empty_chip_id(self) -> None:
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+
+        self.assertEqual(api.get_state()["device"]["chip_id"], "")
+
     def test_oneplus_15t_profile(self) -> None:
         self.assertEqual(
             DEVICE_PROFILES["25821"],

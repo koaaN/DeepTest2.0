@@ -84,7 +84,7 @@ class Api:
         self.sensitive_values = True
         self.device = {
             "connected": False, "name": "No device connected", "model": "",
-            "serial": "", "prjid": "", "rooted": False,
+            "serial": "", "chip_id": "", "prjid": "", "rooted": False,
         }
         try:
             saved = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
@@ -227,7 +227,7 @@ class Api:
             if len(rows) != 1:
                 self.device = {
                     "connected": False, "name": "No device connected", "model": "",
-                    "serial": "", "prjid": "", "rooted": False,
+                    "serial": "", "chip_id": "", "prjid": "", "rooted": False,
                 }
                 return self._result("No single authorized ADB device found.")
             row = rows[0]
@@ -254,10 +254,12 @@ class Api:
             if profile:
                 self.settings["model"] = profile["model"]
                 self.settings["ota_version"] = profile["ota_version"]
-            if chip:
-                self.settings["chip_id"] = chip if chip.lower().startswith("0x") else f"0x{chip}"
+            normalized_chip = chip if chip.lower().startswith("0x") else f"0x{chip}" if chip else ""
+            if normalized_chip:
+                self.settings["chip_id"] = normalized_chip
             self.device = {
                 "connected": True, "name": name, "model": model, "serial": serial,
+                "chip_id": normalized_chip,
                 "prjid": prjid or "unknown",
                 "rooted": root.returncode == 0 and "uid=0" in root.stdout,
             }
