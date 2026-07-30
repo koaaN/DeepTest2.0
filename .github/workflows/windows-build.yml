@@ -36,7 +36,7 @@ jobs:
 
       - name: Package artifact
         shell: pwsh
-        run: Compress-Archive -Path dist\DeepTest2 -DestinationPath DeepTest2-windows.zip
+        run: Compress-Archive -Path dist\DeepTest2.exe -DestinationPath DeepTest2-windows.zip
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4

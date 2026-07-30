@@ -53,7 +53,7 @@ jobs:
           Invoke-WebRequest https://dl.google.com/android/repository/platform-tools-latest-windows.zip -OutFile platform-tools.zip
           Expand-Archive platform-tools.zip -DestinationPath .
           pyinstaller --noconfirm --clean DeepTest2.spec
-          Compress-Archive -Path dist\DeepTest2 -DestinationPath DeepTest2-windows.zip
+          Compress-Archive -Path dist\DeepTest2.exe -DestinationPath DeepTest2-windows.zip
       - uses: actions/upload-artifact@v4
         with:
           name: windows-release

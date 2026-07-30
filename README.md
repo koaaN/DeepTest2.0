@@ -41,10 +41,17 @@ Open the repository’s [Releases](https://github.com/koaaN/DeepTest2.0/releases
 
 1. Download `DeepTest2-windows.zip`.
 2. Extract the ZIP file.
-3. Open the extracted `DeepTest2` folder.
-4. Double-click `DeepTest2.exe`.
+3. Double-click `DeepTest2.exe`.
 
-The Windows release includes Platform Tools and `adb.exe`. The Linux release uses system ADB when available; install Android Platform Tools if ADB is not already on your `PATH`.
+The Windows release is a portable, self-contained executable with Platform Tools and `adb.exe` bundled inside. It does not need to be installed.
+
+If an older multi-file Windows build reports `Failed to resolve Python.Runtime.Loader.Initialize`, Windows has probably blocked files inherited from the downloaded ZIP. Right-click the ZIP, select **Properties**, enable **Unblock**, and extract it again. To repair an existing extracted folder, open PowerShell there and run:
+
+```powershell
+Get-ChildItem -Recurse -File -Force | Unblock-File
+```
+
+The Linux release uses system ADB when available; install Android Platform Tools if ADB is not already on your `PATH`.
 
 ## Before connecting a phone
 

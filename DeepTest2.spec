@@ -39,42 +39,65 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    [],
-    exclude_binaries=True,
-    name='DeepTest2',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='DeepTest2',
-)
-
-if sys.platform == 'darwin':
-    app = BUNDLE(
-        coll,
-        name='DeepTest2.app',
-        icon=None,
-        bundle_identifier='com.koaan.deeptest2',
-        info_plist={
-            'CFBundleName': 'DeepTest 2.0',
-            'CFBundleDisplayName': 'DeepTest 2.0',
-            'NSHighResolutionCapable': True,
-        },
+if sys.platform == 'win32':
+    # A single-file Windows build prevents Explorer from propagating the
+    # downloaded ZIP's Mark of the Web to Python.Runtime.dll. PyInstaller
+    # extracts managed dependencies into a clean temporary directory at launch.
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.datas,
+        [],
+        name='DeepTest2',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
     )
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name='DeepTest2',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+    )
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name='DeepTest2',
+    )
+
+    if sys.platform == 'darwin':
+        app = BUNDLE(
+            coll,
+            name='DeepTest2.app',
+            icon=None,
+            bundle_identifier='com.koaan.deeptest2',
+            info_plist={
+                'CFBundleName': 'DeepTest 2.0',
+                'CFBundleDisplayName': 'DeepTest 2.0',
+                'NSHighResolutionCapable': True,
+            },
+        )
