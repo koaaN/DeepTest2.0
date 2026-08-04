@@ -10,6 +10,7 @@ from pathlib import Path
 
 REMOTE_HELPER = "/data/local/tmp/fastboot-unlock-helper.jar"
 REMOTE_RESERVE = "/data/local/tmp/oplusreserve1.img"
+REMOTE_PRELOAD = "/data/local/tmp/preload.so"
 SU_PATH = "/data/local/tmp/su"
 RESERVE_OFFSET = 0x45A000
 _HEX = re.compile(r"^[0-9a-fA-F]+$")
@@ -125,6 +126,37 @@ def inspect_device() -> DeviceReadiness:
     return DeviceReadiness(serial=serial, model=model, rooted=rooted, chip_id=chip_id)
 
 
+def _cleanup_temporary_root(adb: str, serial: str) -> bool:
+    # Keep su available until every other temporary file has been removed.
+    # Unlinking the running executable is supported on Android/Linux, so su can
+    # remove itself as the final operation in the same privileged shell.
+    temporary_files = (
+        REMOTE_HELPER,
+        REMOTE_RESERVE,
+        REMOTE_PRELOAD,
+        "/data/local/tmp/su_daemon.log",
+        "/data/local/tmp/temp_su.sock",
+    )
+    other_files = " ".join(temporary_files)
+    cleanup_command = (
+        f"{SU_PATH} -c 'rm -f {other_files} && rm -f {SU_PATH}'"
+    )
+    cleanup = _run(
+        [adb, "-s", serial, "shell", cleanup_command],
+        timeout=20,
+    )
+    if cleanup.returncode != 0:
+        return False
+
+    all_files = (*temporary_files, SU_PATH)
+    verify_command = " && ".join(f"test ! -e {path}" for path in all_files)
+    verified = _run(
+        [adb, "-s", serial, "shell", verify_command],
+        timeout=20,
+    )
+    return verified.returncode == 0
+
+
 def apply_authorization(unlock_code: str) -> str:
     code = validate_unlock_code(unlock_code)
     device = inspect_device()
@@ -167,24 +199,7 @@ def apply_authorization(unlock_code: str) -> str:
     if written.returncode != 0:
         raise UnlockHelperError("The patched reserve image could not be written to the phone.")
 
-    temporary_root_files = (
-        SU_PATH,
-        "/data/local/tmp/su_daemon.log",
-        "/data/local/tmp/temp_su.sock",
-    )
-    root_file_list = " ".join(temporary_root_files)
-    release_files = _run(
-        [
-            adb, "-s", device.serial, "shell",
-            f"{SU_PATH} -c 'chown shell:shell {root_file_list}'",
-        ],
-        timeout=20,
-    )
-    cleanup = _run(
-        [adb, "-s", device.serial, "shell", f"rm -f {root_file_list}"],
-        timeout=20,
-    )
-    cleanup_complete = release_files.returncode == 0 and cleanup.returncode == 0
+    cleanup_complete = _cleanup_temporary_root(adb, device.serial)
     cleanup_status = (
         "Temporary root cleanup: complete."
         if cleanup_complete

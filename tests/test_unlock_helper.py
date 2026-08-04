@@ -8,6 +8,7 @@ from unittest.mock import patch
 from deeptesting.unlock_helper import (
     DeviceReadiness,
     UnlockHelperError,
+    _cleanup_temporary_root,
     helper_jar_path,
     inspect_device,
     unlock_code_chip_id,
@@ -80,6 +81,36 @@ class DeviceReadinessTests(unittest.TestCase):
         })()
         with self.assertRaisesRegex(UnlockHelperError, "More than one"):
             inspect_device()
+
+
+class TemporaryRootCleanupTests(unittest.TestCase):
+    @patch("deeptesting.unlock_helper._run")
+    def test_cleanup_uses_root_and_removes_su_last(self, run) -> None:
+        run.side_effect = [
+            type("Result", (), {"returncode": 0})(),
+            type("Result", (), {"returncode": 0})(),
+        ]
+
+        self.assertTrue(_cleanup_temporary_root("adb", "TEST-DEVICE"))
+
+        cleanup_command = run.call_args_list[0].args[0][-1]
+        self.assertTrue(cleanup_command.startswith("/data/local/tmp/su -c '"))
+        self.assertIn("/data/local/tmp/preload.so", cleanup_command)
+        self.assertIn("/data/local/tmp/oplusreserve1.img", cleanup_command)
+        self.assertTrue(cleanup_command.endswith("&& rm -f /data/local/tmp/su'"))
+        final_su_removal = cleanup_command.index("&& rm -f /data/local/tmp/su")
+        self.assertLess(cleanup_command.index("/data/local/tmp/preload.so"), final_su_removal)
+        self.assertLess(cleanup_command.index("/data/local/tmp/oplusreserve1.img"), final_su_removal)
+
+        verify_command = run.call_args_list[1].args[0][-1]
+        self.assertIn("test ! -e /data/local/tmp/su", verify_command)
+
+    @patch("deeptesting.unlock_helper._run")
+    def test_failed_root_cleanup_is_not_reported_as_complete(self, run) -> None:
+        run.return_value = type("Result", (), {"returncode": 1})()
+
+        self.assertFalse(_cleanup_temporary_root("adb", "TEST-DEVICE"))
+        self.assertEqual(run.call_count, 1)
 
 
 if __name__ == "__main__":
