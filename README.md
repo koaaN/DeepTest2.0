@@ -43,7 +43,7 @@ Open the repository’s [Releases](https://github.com/koaaN/DeepTest2.0/releases
 2. Extract the ZIP file.
 3. Double-click `DeepTest2.exe`.
 
-The Windows release is a portable, self-contained executable with Platform Tools and `adb.exe` bundled inside. It does not need to be installed.
+The Windows release is a portable, self-contained executable with Platform Tools, `adb.exe`, and Microsoft's official x64 WebView2 offline installer bundled inside. DeepTest automatically installs WebView2 if it is missing so the interface never falls back to the obsolete Internet Explorer renderer. Windows may request administrator approval during this one-time setup; DeepTest itself does not need to be installed.
 
 If an older multi-file Windows build reports `Failed to resolve Python.Runtime.Loader.Initialize`, Windows has probably blocked files inherited from the downloaded ZIP. Right-click the ZIP, select **Properties**, enable **Unblock**, and extract it again. To repair an existing extracted folder, open PowerShell there and run:
 

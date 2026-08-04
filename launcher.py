@@ -31,6 +31,26 @@ def _show_windows_unblock_message() -> None:
         pass
 
 
+def _show_windows_runtime_message(detail: str) -> None:
+    message = (
+        "DeepTest 2.0 requires Microsoft Edge WebView2 to display its interface.\n\n"
+        f"{detail}\n\n"
+        "Try starting DeepTest as administrator, or install Microsoft Edge "
+        "WebView2 Runtime manually and start DeepTest again."
+    )
+    try:
+        import ctypes
+
+        ctypes.windll.user32.MessageBoxW(
+            None,
+            message,
+            "DeepTest 2.0 requires WebView2",
+            0x10,
+        )
+    except Exception:
+        pass
+
+
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(encoding="utf-8", errors="replace")
@@ -44,6 +64,13 @@ if len(sys.argv) >= 3 and sys.argv[1] == "-m" and sys.argv[2] in {"deeptesting.c
         from deeptesting.cli import main
     sys.argv = [sys.argv[2], *sys.argv[3:]]
 else:
+    if sys.platform == "win32":
+        from deeptesting.windows_runtime import ensure_webview2_runtime
+
+        _runtime_ready, _runtime_error = ensure_webview2_runtime()
+        if not _runtime_ready:
+            _show_windows_runtime_message(_runtime_error)
+            raise SystemExit(1)
     try:
         from deeptesting.web_gui import main
     except RuntimeError as exc:

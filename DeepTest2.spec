@@ -23,6 +23,9 @@ datas = [
 if Path('platform-tools').is_dir():
     datas.append(('platform-tools', 'platform-tools'))
 
+if sys.platform == 'win32' and Path('webview2-runtime').is_dir():
+    datas.append(('webview2-runtime', 'webview2-runtime'))
+
 
 a = Analysis(
     ['launcher.py'],

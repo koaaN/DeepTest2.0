@@ -30,6 +30,12 @@ jobs:
           Invoke-WebRequest https://dl.google.com/android/repository/platform-tools-latest-windows.zip -OutFile platform-tools.zip
           Expand-Archive platform-tools.zip -DestinationPath .
 
+      - name: Download WebView2 offline runtime installer
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force webview2-runtime | Out-Null
+          Invoke-WebRequest "https://go.microsoft.com/fwlink/?linkid=2124701" -OutFile "webview2-runtime\MicrosoftEdgeWebView2RuntimeInstallerX64.exe"
+
       - name: Build executable
         shell: pwsh
         run: pyinstaller --noconfirm --clean DeepTest2.spec
