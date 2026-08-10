@@ -17,6 +17,7 @@ import webview
 from .unlock_helper import (
     UnlockHelperError,
     apply_authorization,
+    detect_root_command,
     inspect_device,
     unlock_code_chip_id,
     validate_unlock_code,
@@ -276,10 +277,7 @@ class Api:
             match = re.search(r"\d{5}", raw_prjid)
             prjid = match.group(0) if match else ""
             chip = prop("ro.boot.chipid")
-            root = subprocess.run(
-                [adb, "-s", serial, "shell", "/data/local/tmp/su -c 'id'"],
-                capture_output=True, text=True, timeout=10,
-            )
+            root_command = detect_root_command(adb, serial)
             profile = DEVICE_PROFILES.get(prjid)
             name = profile["name"] if profile else model
             if profile:
@@ -292,7 +290,7 @@ class Api:
                 "connected": True, "name": name, "model": model, "serial": serial,
                 "chip_id": normalized_chip,
                 "prjid": prjid or "unknown",
-                "rooted": root.returncode == 0 and "uid=0" in root.stdout,
+                "rooted": bool(root_command),
             }
             self._save()
             return self._result(f"Connected to {name}.")

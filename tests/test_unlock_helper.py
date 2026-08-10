@@ -9,6 +9,7 @@ from deeptesting.unlock_helper import (
     DeviceReadiness,
     UnlockHelperError,
     _cleanup_temporary_root,
+    detect_root_command,
     helper_jar_path,
     inspect_device,
     unlock_code_chip_id,
@@ -68,8 +69,22 @@ class DeviceReadinessTests(unittest.TestCase):
         ]
         self.assertEqual(
             inspect_device(),
-            DeviceReadiness(serial="ABC", model="PLK110", rooted=True, chip_id="a1b2c3d4"),
+            DeviceReadiness(
+                serial="ABC", model="PLK110", rooted=True,
+                chip_id="a1b2c3d4", root_command="/data/local/tmp/su",
+            ),
         )
+
+    @patch("deeptesting.unlock_helper._run")
+    def test_falls_back_to_su_from_path(self, run) -> None:
+        run.side_effect = [
+            type("Result", (), {"stdout": "", "stderr": "not found", "returncode": 127})(),
+            type("Result", (), {"stdout": "uid=0(root) gid=0(root)\n", "stderr": "", "returncode": 0})(),
+        ]
+
+        self.assertEqual(detect_root_command("adb", "ABC"), "su")
+        self.assertIn("/data/local/tmp/su -c 'id'", run.call_args_list[0].args[0][-1])
+        self.assertEqual(run.call_args_list[1].args[0][-1], "su -c 'id'")
 
     @patch("deeptesting.unlock_helper._adb_path", return_value="/usr/bin/adb")
     @patch("deeptesting.unlock_helper._run")
@@ -111,6 +126,18 @@ class TemporaryRootCleanupTests(unittest.TestCase):
 
         self.assertFalse(_cleanup_temporary_root("adb", "TEST-DEVICE"))
         self.assertEqual(run.call_count, 1)
+
+    @patch("deeptesting.unlock_helper._run")
+    def test_cleanup_can_use_system_su_without_removing_it(self, run) -> None:
+        run.side_effect = [
+            type("Result", (), {"returncode": 0})(),
+            type("Result", (), {"returncode": 0})(),
+        ]
+
+        self.assertTrue(_cleanup_temporary_root("adb", "TEST-DEVICE", "su"))
+        cleanup_command = run.call_args_list[0].args[0][-1]
+        self.assertTrue(cleanup_command.startswith("su -c '"))
+        self.assertTrue(cleanup_command.endswith("&& rm -f /data/local/tmp/su'"))
 
 
 if __name__ == "__main__":

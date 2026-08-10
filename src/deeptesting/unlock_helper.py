@@ -26,6 +26,7 @@ class DeviceReadiness:
     model: str
     rooted: bool
     chip_id: str = ""
+    root_command: str = ""
 
 
 def validate_unlock_code(value: str) -> str:
@@ -100,6 +101,16 @@ def _run(command: list[str], timeout: int = 20) -> subprocess.CompletedProcess[s
         raise UnlockHelperError(f"Could not run ADB: {exc}") from exc
 
 
+def detect_root_command(adb: str, serial: str) -> str:
+    """Return the working su command without assuming how root was obtained."""
+    for command in (SU_PATH, "su"):
+        result = _run([adb, "-s", serial, "shell", f"{command} -c 'id'"])
+        output = f"{getattr(result, 'stdout', '')}\n{getattr(result, 'stderr', '')}"
+        if result.returncode == 0 and "uid=0" in output:
+            return command
+    return ""
+
+
 def inspect_device() -> DeviceReadiness:
     adb = _adb_path()
     devices = _run([adb, "devices", "-l"])
@@ -119,14 +130,20 @@ def inspect_device() -> DeviceReadiness:
     if len(available) > 1:
         raise UnlockHelperError("More than one ADB device is connected. Leave only the target phone connected.")
     serial, model = available[0]
-    root = _run([adb, "-s", serial, "shell", f"{SU_PATH} -c 'id'"])
-    rooted = root.returncode == 0 and "uid=0" in root.stdout
+    root_command = detect_root_command(adb, serial)
+    rooted = bool(root_command)
     chip = _run([adb, "-s", serial, "shell", "getprop", "ro.boot.chipid"])
     chip_id = _normalize_chip_id(chip.stdout) if chip.returncode == 0 else ""
-    return DeviceReadiness(serial=serial, model=model, rooted=rooted, chip_id=chip_id)
+    return DeviceReadiness(
+        serial=serial,
+        model=model,
+        rooted=rooted,
+        chip_id=chip_id,
+        root_command=root_command,
+    )
 
 
-def _cleanup_temporary_root(adb: str, serial: str) -> bool:
+def _cleanup_temporary_root(adb: str, serial: str, root_command: str = SU_PATH) -> bool:
     # Keep su available until every other temporary file has been removed.
     # Unlinking the running executable is supported on Android/Linux, so su can
     # remove itself as the final operation in the same privileged shell.
@@ -138,9 +155,7 @@ def _cleanup_temporary_root(adb: str, serial: str) -> bool:
         "/data/local/tmp/temp_su.sock",
     )
     other_files = " ".join(temporary_files)
-    cleanup_command = (
-        f"{SU_PATH} -c 'rm -f {other_files} && rm -f {SU_PATH}'"
-    )
+    cleanup_command = f"{root_command} -c 'rm -f {other_files} && rm -f {SU_PATH}'"
     cleanup = _run(
         [adb, "-s", serial, "shell", cleanup_command],
         timeout=20,
@@ -171,13 +186,14 @@ def apply_authorization(unlock_code: str) -> str:
         raise UnlockHelperError(
             "Root access is required. Grant the ADB shell root permission in your root manager."
         )
+    root_command = device.root_command or SU_PATH
 
     adb = _adb_path()
     # Work from a fresh device dump and preserve it locally before patching.
     backup_dir = Path.home() / ".local" / "share" / "deeptest" / "reserve-backups"
     backup_dir.mkdir(parents=True, exist_ok=True)
     local_backup = backup_dir / f"oplusreserve1-preunlock-{device.serial}.img"
-    dump_cmd = f"{SU_PATH} -c 'dd if=/dev/block/by-name/oplusreserve1 of={REMOTE_RESERVE} && chmod 0644 {REMOTE_RESERVE}'"
+    dump_cmd = f"{root_command} -c 'dd if=/dev/block/by-name/oplusreserve1 of={REMOTE_RESERVE} && chmod 0644 {REMOTE_RESERVE}'"
     dump = _run([adb, "-s", device.serial, "shell", dump_cmd], timeout=90)
     if dump.returncode != 0:
         detail = (dump.stderr or dump.stdout).strip()
@@ -194,12 +210,12 @@ def apply_authorization(unlock_code: str) -> str:
         detail = (pushed.stderr or pushed.stdout).strip()
         raise UnlockHelperError(f"Could not copy the helper to the phone: {detail}")
 
-    write_cmd = f"{SU_PATH} -c 'dd if={REMOTE_RESERVE} of=/dev/block/by-name/oplusreserve1 conv=fsync'"
+    write_cmd = f"{root_command} -c 'dd if={REMOTE_RESERVE} of=/dev/block/by-name/oplusreserve1 conv=fsync'"
     written = _run([adb, "-s", device.serial, "shell", write_cmd], timeout=90)
     if written.returncode != 0:
         raise UnlockHelperError("The patched reserve image could not be written to the phone.")
 
-    cleanup_complete = _cleanup_temporary_root(adb, device.serial)
+    cleanup_complete = _cleanup_temporary_root(adb, device.serial, root_command)
     cleanup_status = (
         "Temporary root cleanup: complete."
         if cleanup_complete
