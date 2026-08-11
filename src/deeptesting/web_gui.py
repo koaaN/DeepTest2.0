@@ -103,7 +103,9 @@ class Api:
 
     def _save(self) -> None:
         APP_DIR.mkdir(parents=True, exist_ok=True)
-        SETTINGS_PATH.write_text(json.dumps(self.settings, indent=2), encoding="utf-8")
+        payload = (json.dumps(self.settings, indent=2) + "\n").encode("utf-8")
+        from .private_file import atomic_write_private
+        atomic_write_private(SETTINGS_PATH, payload, prefix=".gui-settings-")
 
     def _versions(self) -> list[str]:
         profile = DEVICE_PROFILES.get(str(self.device["prjid"]))
@@ -292,6 +294,16 @@ class Api:
                 "prjid": prjid or "unknown",
                 "rooted": bool(root_command),
             }
+            # Auto load code from local Vault
+            try:
+                from .vault import UnlockCodeVault
+                vault = UnlockCodeVault()
+                saved_code = vault.load_by_serial(serial) or vault.load_by_chip_id(normalized_chip)
+                if saved_code:
+                    self.unlock_code = saved_code
+                    self.log += "$ Automatically loaded saved unlock code from local Vault.\n"
+            except Exception as e:
+                self.log += f"$ Error reading from vault: {e}\n"
             self._save()
             return self._result(f"Connected to {name}.")
         except Exception as exc:
@@ -364,6 +376,17 @@ class Api:
                     unlock_code_chip_id(code)
                     self.unlock_code = code
                     code_received = True
+                    # Save to local Vault
+                    try:
+                        from .vault import UnlockCodeVault
+                        vault = UnlockCodeVault()
+                        serial = self.device.get("serial")
+                        chip_id = self.device.get("chip_id")
+                        if serial and chip_id:
+                            vault.save(serial, chip_id, code)
+                            self.log += "$ Saved unlock code to local Vault.\n"
+                    except Exception as e:
+                        self.log += f"$ Error saving code to vault: {e}\n"
             result = self._result(
                 "Unlock code received. Connect the phone and run Check requirements to validate it."
                 if code_received else "Request complete.",
@@ -385,6 +408,14 @@ class Api:
         if embedded != device.chip_id:
             raise UnlockHelperError("The unlock code belongs to a different connected phone.")
         self.unlock_code = code
+        # Save manually loaded code to local Vault
+        try:
+            from .vault import UnlockCodeVault
+            vault = UnlockCodeVault()
+            vault.save(device.serial, device.chip_id, code)
+            self.log += "$ Saved manual unlock code to local Vault.\n"
+        except Exception as e:
+            self.log += f"$ Error saving code to vault: {e}\n"
 
     def load_unlock_code(self, value: str) -> dict:
         try:
