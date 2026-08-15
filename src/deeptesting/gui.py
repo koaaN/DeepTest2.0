@@ -1100,7 +1100,9 @@ class DeepTestingApp(ctk.CTk):
         self._append("$ root helper started…\n")
         self.update_idletasks()
         _, _, _, prj_id = getattr(self, "_connected_device_info", ("", "", "", ""))
-        target_folder = {"24831": "OP15", "24855": "ACE6T", "25821": "15T"}.get(prj_id, "OP15")
+        target_folder = {
+            "24831": "OP15", "24851": "ACE6", "24855": "ACE6T", "25821": "15T"
+        }.get(prj_id, "OP15")
         bundle_root = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2]))
         version = self.root_version.get()
         script_dir = bundle_root / "android-helper" / "assets" / target_folder / version
@@ -2060,6 +2062,8 @@ class DeepTestingApp(ctk.CTk):
         target_name = model
         if prj_id == "24831":
             target_name = "OnePlus 15"
+        elif prj_id == "24851":
+            target_name = "OnePlus Ace 6"
         elif prj_id == "24855":
             target_name = "OnePlus Ace 6T"
         elif prj_id == "25821":
@@ -2072,6 +2076,10 @@ class DeepTestingApp(ctk.CTk):
             # DeepTest must submit the PLK110 target firmware identifier.
             self.vars["ota_version"].set("PLK110_11.A.68_0680_202606250030")
             self._save_settings()
+        elif prj_id == "24851":
+            self.vars["model"].set("PLQ110")
+            self.vars["ota_version"].set("PLQ110_11.A.56_0560_202607171908")
+            self._save_settings()
         elif prj_id == "24855":
             self.vars["model"].set("PLR110")
             self.vars["ota_version"].set("PLR110_11.A.62_0620_202606152334")
@@ -2080,7 +2088,9 @@ class DeepTestingApp(ctk.CTk):
             self.vars["model"].set("PLZ110")
             self.vars["ota_version"].set("PLZ110_11.A.31_0310_202605280615")
             self._save_settings()
-        self._set_root_versions({"24831": "OP15", "24855": "ACE6T", "25821": "15T"}.get(prj_id, "OP15"))
+        self._set_root_versions({
+            "24831": "OP15", "24851": "ACE6", "24855": "ACE6T", "25821": "15T"
+        }.get(prj_id, "OP15"))
 
     def _toggle_device_ids(self) -> None:
         self._show_sensitive = not self._show_sensitive

@@ -50,6 +50,12 @@ DEVICE_PROFILES = {
         "ota_version": "PLR110_11.A.62_0620_202606152334",
         "root_family": "ACE6T",
     },
+    "24851": {
+        "name": "OnePlus Ace 6",
+        "model": "PLQ110",
+        "ota_version": "PLQ110_11.A.56_0560_202607171908",
+        "root_family": "ACE6",
+    },
     "25821": {
         "name": "OnePlus 15T",
         "model": "PLZ110",

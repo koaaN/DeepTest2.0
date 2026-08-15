@@ -25,6 +25,24 @@ class DeviceProfileTests(TestCase):
             },
         )
 
+    def test_oneplus_ace_6_profile(self) -> None:
+        self.assertEqual(
+            DEVICE_PROFILES["24851"],
+            {
+                "name": "OnePlus Ace 6",
+                "model": "PLQ110",
+                "ota_version": "PLQ110_11.A.56_0560_202607171908",
+                "root_family": "ACE6",
+            },
+        )
+
+    def test_oneplus_ace_6_has_no_root_helper_yet(self) -> None:
+        with mock.patch.object(Api, "_save"):
+            api = Api()
+        api.device["prjid"] = "24851"
+
+        self.assertEqual(api.get_state()["versions"], [])
+
 
 class CommandOutputTests(TestCase):
     @mock.patch("deeptesting.web_gui.subprocess.run")
