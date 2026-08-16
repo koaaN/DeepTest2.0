@@ -1,0 +1,438 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{color-scheme:dark;--bg:#080b12;--card:#121725;--line:#273047;--text:#f4f6fb;--muted:#929db3;--purple:#735cff;--green:#41dda1;--red:#ff6078}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}.top{padding:48px 22px 18px;background:#0e131e;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:18px}.brand{display:flex;gap:12px;align-items:center;min-width:0}.brand-copy{min-width:0}.logo{width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:linear-gradient(135deg,#866fff,#6049ee);display:grid;place-items:center;font-weight:800;font-size:19px}h1{font-size:20px;margin:0;white-space:nowrap}.brand p{font-size:11px;margin-top:3px;white-space:nowrap}.device{margin:0;color:var(--green);font-size:11px;line-height:1.35;font-weight:700;text-align:right;max-width:42%}.steps{display:none}.step{border:1px solid var(--line);padding:9px 12px;border-radius:999px;color:var(--muted);white-space:nowrap}.step.on{background:#2b234f;color:#fff;border-color:#5845b5}.page{padding:22px 18px 90px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:14px}.eyebrow{color:#a99cff;font-size:12px;font-weight:800;letter-spacing:.12em}.title{font-size:25px;font-weight:800;margin:8px 0 5px}.field{margin-top:15px}label{display:block;color:var(--muted);font-size:12px;font-weight:700;margin:0 0 7px}input,select,textarea{width:100%;background:#1b2232;border:1px solid #303b55;color:#fff;border-radius:13px;padding:14px;font-size:16px}textarea{min-height:110px}button{border:0;border-radius:13px;padding:13px 16px;background:#20283a;color:#fff;font-weight:750;font-size:15px;margin:12px 7px 0 0}.primary{background:var(--purple)}.danger{background:#552334;color:#ffb7c3}.result{white-space:pre-wrap;margin-top:14px;padding:13px;border-radius:12px;background:#090c13;color:var(--muted);font-family:monospace;overflow-wrap:anywhere}.ok{color:var(--green)}.bad{color:var(--red)}.hidden{display:none!important}.account-profile{display:flex;align-items:center;gap:14px;margin-top:18px;padding:16px;border:1px solid var(--line);border-radius:16px;background:#181f2e}.account-avatar{width:50px;height:50px;flex:0 0 50px;border-radius:50%;display:grid;place-items:center;background:#2d2554;color:#bdb4ff}.account-avatar svg{width:27px;height:27px}.account-copy{min-width:0;flex:1}.account-copy small{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.account-copy strong{display:block;margin-top:4px;font-size:17px;overflow-wrap:anywhere}.account-copy span{display:block;color:var(--muted);font-size:12px;margin-top:3px}.account-state{flex:0 0 auto;color:var(--green);font-size:12px;font-weight:800}.account-state:before{content:'•';margin-right:5px}.account-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.nav{position:fixed;bottom:0;left:0;right:0;background:#0e131eee;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:10px 5px calc(10px + env(safe-area-inset-bottom))}.nav button{font-size:12px;margin:0;padding:10px;background:transparent}.nav button.on{color:#a99cff}
+</style>
+</head>
+<body>
+<header class="top">
+<div class="brand">
+<div class="logo"><img src="app_icon.png" alt=""></div>
+<div class="brand-copy">
+<h1>DeepTest 2.0</h1>
+<p>OnePlus unlock client</p>
+</div>
+</div>
+<div id="device" class="device">Reading this phone…</div>
+</header>
+<div class="steps">
+<span class="step on">1 Account</span>
+<span class="step">2 Request</span>
+<span class="step">3 Root</span>
+<span class="step">4 Install</span>
+</div>
+<main class="page">
+<section id="account" class="screen">
+<div class="card">
+<div class="eyebrow">ACCOUNT LOGIN</div>
+<div class="title">Connect your HeyTap account</div>
+<p>Verification and tokens stay in this app's private storage.</p>
+<div id="accountSignedIn" class="hidden">
+<div class="account-profile">
+<div class="account-avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.5 20c.7-3.2 2.9-5 6.5-5s5.8 1.8 6.5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+<div class="account-copy"><small>Signed in as</small><strong id="signedInAccount">HeyTap account</strong><span>DeepTesting authorization stored locally</span></div>
+<div class="account-state">Active</div>
+</div>
+<div class="account-actions"><button class="danger" onclick="logoutAccount()">Log out</button></div>
+</div>
+<div id="accountSignedOut">
+<button onclick="importAuth()">Import existing account .json</button>
+<div class="field">
+<label>LOGIN METHOD</label>
+<input id="channel" type="hidden" value="email">
+<div id="channelSelect" class="login-select">
+<button id="channelButton" class="login-select-button" type="button" aria-expanded="false" onclick="toggleLoginMethod()"><span id="channelLabel">Email</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div id="channelMenu" class="login-select-menu hidden">
+<button id="channelEmail" type="button" onclick="setLoginMethod('email')"><span><b>Email</b><small>Receive the code by email</small></span><strong>✓</strong></button>
+<button id="channelPhone" type="button" onclick="setLoginMethod('phone')"><span><b>Phone</b><small>Receive the code by SMS</small></span><strong></strong></button>
+</div>
+</div>
+</div>
+<div id="calling" class="field" hidden>
+<label>CALLING CODE</label>
+<input id="country" type="hidden" value="+46">
+<div id="callingSelect" class="login-select">
+<button id="countryButton" class="login-select-button" type="button" aria-expanded="false" onclick="toggleCountryMenu()"><span id="countryLabel">Sweden (+46)</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<div id="countryMenu" class="login-select-menu country-menu hidden">
+<div class="country-search"><input id="countrySearch" type="search" autocomplete="off" placeholder="Search country or code" aria-label="Search country or calling code" oninput="renderCallingCodes(this.value)"></div>
+<div id="countryOptions" class="country-options"></div>
+</div>
+</div>
+</div>
+<div class="field">
+<label id="accountLabel">EMAIL</label>
+<input id="accountId" type="email" inputmode="email" autocomplete="email" placeholder="Email address">
+</div>
+<button class="primary" onclick="sendCode()">Send code</button>
+<div class="field">
+<label>VERIFICATION CODE</label>
+<input id="verifyCode" inputmode="numeric">
+</div>
+<button onclick="verify()">Verify & authorize</button>
+</div>
+<div id="loginOut" class="result">Ready.</div>
+</div>
+</section>
+<section id="request" class="screen hidden">
+<div class="card">
+<div class="eyebrow">UNLOCK APPLICATION</div>
+<div class="title">Request authorization</div>
+<p>Use the same request profile as the desktop client. Status may return a code before review completes.</p>
+<div class="field">
+<label>DEVICE GUID (UDID)</label>
+<input id="udid" autocomplete="off">
+</div>
+<div class="field">
+<label>MODEL</label>
+<input id="model" value="PLK110">
+</div>
+<div class="field">
+<label>OTA VERSION</label>
+<input id="otaVersion" value="PLK110_11.A.68_0680_202606250030">
+</div>
+<div class="field">
+<label>CHIP ID</label>
+<input id="chipId" autocomplete="off">
+</div>
+<button onclick="request('unlock-condition-match')">Check eligibility</button>
+<button class="primary" onclick="request('apply-unlock')">Apply</button>
+<button onclick="request('get-apply-status')">Check status</button>
+<button onclick="request('get-history-unlock-code')">Get code</button>
+<div id="requestOut" class="result">No request run yet.</div>
+</div>
+</section>
+<section id="root" class="screen hidden">
+<div class="card">
+<div class="eyebrow">TEMPORARY ROOT</div>
+<div class="title">Prepare this phone</div>
+<p>The bundled on-device helper matches the running kernel before attempting temporary root. Keep the phone awake and unlocked; several attempts may be required.</p>
+<button class="primary" onclick="gainRoot()">Run root helper</button>
+<button onclick="rootCheck()">Check root access</button>
+<div id="rootOut" class="result">Not checked.</div>
+</div>
+</section>
+<section id="install" class="screen hidden">
+<div class="card">
+<div class="eyebrow">INSTALL AUTHORIZATION</div>
+<div class="title">Validate, back up and write</div>
+<p>The code is checked against this phone before anything is written. An untouched partition backup is created first.</p>
+<div class="field">
+<label>632-CHARACTER UNLOCK CODE</label>
+<textarea id="unlockCode" spellcheck="false">
+</textarea>
+</div>
+<button class="primary" onclick="installCode()">Apply authorization</button>
+<div id="installOut" class="result">Waiting for a valid code.</div>
+</div>
+</section>
+<section id="settings" class="screen hidden">
+<style>.settings-list{margin-top:18px;border:1px solid var(--line);border-radius:14px;overflow:hidden}.settings-row{width:100%;margin:0!important;border-radius:0!important;display:flex;align-items:center;justify-content:space-between;text-align:left;padding:16px;background:transparent;border-bottom:1px solid var(--line)}.settings-row:last-child{border-bottom:0}.settings-row b,.settings-row small{display:block}.settings-row small{color:var(--muted);font-size:12px;margin-top:4px}.settings-row strong{font-size:25px;color:var(--muted)}.switch{position:relative;width:48px;height:28px;display:block}.switch input{display:none}.switch i{position:absolute;inset:0;border-radius:20px;background:#30394d;transition:.2s}.switch i:before{content:"";position:absolute;width:22px;height:22px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}.switch input:checked+i{background:var(--purple)}.switch input:checked+i:before{transform:translateX(20px)}.about-link{color:var(--purple);font-weight:700;text-decoration:none}</style>
+<div class="card">
+<div class="eyebrow">SETTINGS</div><div class="title">Preferences</div>
+<p>Control the appearance and local data of DeepTest.</p>
+<div class="settings-list">
+<button class="settings-row" onclick="exportSettings()"><span><b>Export auth &amp; settings</b><small>Save a backup JSON file</small></span><strong>›</strong></button>
+<div class="settings-row"><span><b>Bright mode</b><small>Use a light appearance</small></span><label class="switch"><input id="themeSwitch" type="checkbox" onchange="toggleTheme(this.checked)"><i></i></label></div>
+</div>
+<div id="settingsOut" class="result">Private storage is protected inside this app.</div>
+</div>
+<div class="card">
+<div class="eyebrow">ABOUT</div><div class="title">DeepTest 2.0</div>
+<p>Created by koaaN as a graphical client built on the DeepTesting implementation and protocol research by mikoker.</p>
+<p>The on-device temporary-root helper contains modified code from <a class="about-link" href="https://github.com/YuKongA/ghostlock-app">YuKongA/ghostlock-app</a>, licensed under the Apache License 2.0.</p>
+<button onclick="openSourceLicenses()">Open-source licenses</button>
+<p>Account and device data stays local unless you explicitly export it.</p>
+</div>
+</section>
+</main>
+<div id="logoutDialog" class="logout-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="logoutTitle">
+<div class="logout-sheet">
+<div class="logout-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5H6.8A1.8 1.8 0 0 0 5 6.8v10.4A1.8 1.8 0 0 0 6.8 19H10M14 8l4 4-4 4m4-4H9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div id="logoutTitle" class="logout-title">Log out of HeyTap?</div>
+<p>Your locally stored authorization will be removed from this app. Device settings and partition backups will stay untouched.</p>
+<div class="logout-buttons"><button onclick="closeLogoutDialog()">Cancel</button><button class="danger" onclick="confirmLogout()">Log out</button></div>
+</div>
+</div>
+<div id="captchaDialog" class="captcha-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="captchaTitle">
+<div class="captcha-sheet">
+<div class="captcha-head"><div><div class="eyebrow">SECURITY CHECK</div><div id="captchaTitle" class="captcha-title">Complete the security check</div><div class="captcha-subtitle">Follow the verification shown below.</div></div><button type="button" aria-label="Close verification" onclick="closeCaptchaDialog()">×</button></div>
+<iframe id="captchaFrame" title="HeyTap slider verification"></iframe>
+<div class="captcha-note">Complete the verification above. DeepTest will continue automatically.</div>
+</div>
+</div>
+<div id="licenseDialog" class="license-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="licenseTitle">
+<div class="license-sheet">
+<div class="license-head"><div><div class="eyebrow">OPEN SOURCE</div><div id="licenseTitle" class="license-title">Third-party licenses</div></div><button type="button" aria-label="Close licenses" onclick="closeSourceLicenses()">×</button></div>
+<pre id="licenseText">Loading notices and license…</pre>
+</div>
+</div>
+<div id="identityDialog" class="identity-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="identityTitle">
+<div class="identity-sheet">
+<div class="identity-icon">✓</div>
+<div class="eyebrow">IDENTITY CHECK</div>
+<div id="identityTitle" class="identity-title">One more security step</div>
+<p>HeyTap accepted your verification code, but requires an additional check on this phone before DeepTesting can be authorized.</p>
+<div class="identity-steps"><span><b>1</b> Open and complete the HeyTap identity check.</span><span><b>2</b> Return to DeepTest when it is finished.</span><span><b>3</b> Continue the saved login below.</span></div>
+<div id="identityError" class="identity-error hidden"></div>
+<div class="identity-buttons"><button onclick="closeIdentityDialog()">Cancel</button><button class="primary" onclick="openIdentityCheck()">Open identity check</button><button class="primary" onclick="continueIdentityCheck()">I completed the check</button></div>
+</div>
+</div>
+<nav class="nav">
+<button class="on" onclick="show('account',this)">Account</button>
+<button onclick="show('request',this)">Request</button>
+<button onclick="show('root',this)">Root</button>
+<button onclick="show('install',this)">Install</button><button onclick="show('settings',this)">Settings</button>
+</nav>
+<script>
+let callbackId=0;function exportSettings(){settingsOut.textContent='Choose where to save your auth and settings backup…';DeepTest.exportSettings()}window.onSettingsExport=v=>render('settingsOut',v);function toggleTheme(on){document.body.classList.toggle('bright',on);DeepTest.setBrightMode(on);localStorage.setItem('deepTestBright',on?'1':'0')}function show(id,b){document.querySelectorAll('.screen').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('on'));b.classList.add('on')}function parse(v){try{return JSON.parse(v)}catch(e){return{ok:false,error:v}}}function render(id,v){let x=parse(v),el=document.getElementById(id);el.textContent=x.error||((x.message||'')+(x.log?'\n\n'+x.log:''))||JSON.stringify(x,null,2);el.className='result '+(x.ok?'ok':x.error?'bad':'');if(x.unlockCode)document.getElementById('unlockCode').value=x.unlockCode}function refreshAccount(){const x=parse(DeepTest.accountInfo());accountSignedIn.classList.toggle('hidden',!x.authorized);accountSignedOut.classList.toggle('hidden',!!x.authorized);if(x.authorized){signedInAccount.textContent=x.account||'Imported HeyTap account';loginOut.textContent='Authorization is ready and stored in this app\'s private storage.';loginOut.className='result ok'}else{loginOut.textContent=x.message||'Not signed in.';loginOut.className='result'}}function logoutAccount(){if(!confirm('Log out and remove the locally stored HeyTap authorization from this app?'))return;const x=parse(DeepTest.logoutAccount());render('loginOut',JSON.stringify(x));refreshAccount()}function importAuth(){DeepTest.pickAuth()}window.onAuthImported=v=>{render('loginOut',v);if(parse(v).ok)refreshAccount()};function api(action,data,out){let cb='cb'+(++callbackId);window[cb]=v=>{const x=parse(v);render(out,v);if(action==='verify'&&x.interaction&&(x.kind==='verification'||x.kind==='completion'))showIdentityDialog(x);if(action==='verify'&&x.ok)refreshAccount();delete window[cb]};DeepTest.api(action,JSON.stringify(data),cb)}function sendCode(){api('login',{channel:channel.value,accountId:accountId.value,country:country.value},'loginOut')}function verify(){api('verify',{code:verifyCode.value},'loginOut')}function request(endpoint){api('request',{endpoint,udid:udid.value,model:model.value,otaVersion:otaVersion.value,chipId:chipId.value},'requestOut')}function rootCheck(){let cb='cb'+(++callbackId);window[cb]=v=>{render('rootOut',v);delete window[cb]};DeepTest.rootCheck(cb)}function gainRoot(){rootOut.className='result';rootOut.textContent='Root helper running…';const busy=document.createElement('div');busy.className='dt-loading';busy.id='rootLoading';busy.innerHTML='<span class=dt-spinner></span>';document.body.appendChild(busy);let cb='cb'+(++callbackId);window[cb]=v=>{const b=document.getElementById('rootLoading');if(b)b.remove();render('rootOut',v);delete window[cb]};DeepTest.gainTempRoot(cb)}function installCode(){const started=Date.now();const stages=['Extracting oplusreserve1…','Backing up original oplusreserve1…','Patching oplusreserve1…','Flashing patched oplusreserve1…'];let si=0;installOut.className='result';installOut.textContent=stages[0];const busy=document.createElement('div');busy.className='dt-loading';busy.id='installLoading';busy.innerHTML='<span class=dt-spinner></span>';document.body.appendChild(busy);const timer=setInterval(()=>{si=Math.min(si+1,stages.length-1);installOut.textContent=stages[si]},2000);let cb='cb'+(++callbackId);window[cb]=v=>{const finish=()=>{clearInterval(timer);const busy=document.getElementById('installLoading');if(busy)busy.remove();render('installOut',v);try{const x=JSON.parse(v);if(x.ok){installOut.textContent='✓ Authorization completed successfully.\n\n'+(x.backup?'Backup: '+x.backup:'');installOut.className='result ok';const b=document.createElement('button');b.className='primary';b.textContent='Reboot to bootloader';b.onclick=()=>{b.disabled=true;b.textContent='Rebooting…';let rb='cb'+(++callbackId);window[rb]=r=>{const y=parse(r);if(!y.ok){b.disabled=false;b.textContent='Reboot to bootloader';render('installOut',r)}delete window[rb]};DeepTest.rebootBootloader(rb)};installOut.parentNode.appendChild(b)}}catch(e){}delete window[cb]};setTimeout(finish,Math.max(0,8000-(Date.now()-started)))};DeepTest.installAuthorization(unlockCode.value,cb)}let d=parse(DeepTest.deviceInfo());device.textContent=(d.model||'Android device')+(d.prjid?' · PRJ-ID '+d.prjid:'');udid.value=d.udid||'';chipId.value=d.chipId||'';refreshAccount();
+</script>
+<style>
+.logo{overflow:hidden;background:transparent;font-size:0}.logo img{display:block;width:100%;height:100%;object-fit:cover}
+body.bright .account-profile{background:#f0f2f7;color:#182033}
+body.bright button.danger{background:#ffe5ea;color:#a52d45}
+.logout-dialog{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:#0009}
+.logout-sheet{width:100%;max-width:520px;padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 18px 55px #000b}
+.logout-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#3b1d2a;color:#ff7890}
+.logout-icon svg{width:25px;height:25px}.logout-title{margin-top:16px;font-size:22px;font-weight:800}.logout-sheet p{color:var(--muted);line-height:1.45}.logout-buttons{display:flex;justify-content:flex-end;gap:8px}.logout-buttons button{margin-right:0}
+body.bright .logout-sheet{background:#fff}body.bright .logout-icon{background:#ffe5ea;color:#a52d45}
+.captcha-dialog{position:fixed;inset:0;z-index:10001;display:flex;align-items:center;justify-content:center;padding:18px;background:#000c}.captcha-sheet{width:100%;max-width:560px;max-height:calc(100vh - 36px);overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 18px 55px #000c}.captcha-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;border-bottom:1px solid var(--line)}.captcha-head button{flex:0 0 38px;width:38px;height:38px;margin:0;padding:0;border-radius:50%;font-size:23px}.captcha-title{margin-top:4px;font-size:19px;font-weight:800}.captcha-subtitle{margin-top:4px;color:var(--muted);font-size:12px}.captcha-sheet iframe{display:block;flex:0 1 auto;width:100%;height:320px;min-height:240px;border:0;background:#fff}.captcha-note{flex:0 0 auto;padding:12px 18px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}body.bright .captcha-sheet{background:#fff}
+.license-dialog{position:fixed;inset:0;z-index:10002;display:flex;align-items:center;justify-content:center;padding:18px;background:#000c}.license-sheet{width:100%;max-width:620px;height:min(760px,calc(100vh - 36px));overflow:hidden;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 18px 55px #000c}.license-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 18px;border-bottom:1px solid var(--line)}.license-head button{flex:0 0 38px;width:38px;height:38px;margin:0;padding:0;border-radius:50%;font-size:23px}.license-title{margin-top:4px;font-size:20px;font-weight:800}.license-sheet pre{flex:1;margin:0;padding:18px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--muted);background:#090c13;font:12px/1.5 monospace}body.bright .license-sheet{background:#fff}body.bright .license-sheet pre{background:#eef0f5;color:#273047}
+.identity-dialog{position:fixed;inset:0;z-index:10003;display:flex;align-items:center;justify-content:center;padding:18px;background:#000c}.identity-sheet{width:100%;max-width:560px;padding:22px;border:1px solid var(--line);border-radius:22px;background:var(--card);box-shadow:0 18px 55px #000c}.identity-icon{width:48px;height:48px;display:grid;place-items:center;margin-bottom:16px;border-radius:15px;background:#2b234f;color:#bdb4ff;font-size:25px;font-weight:900}.identity-title{margin-top:7px;font-size:24px;font-weight:800}.identity-sheet>p{color:var(--muted);line-height:1.5}.identity-steps{display:grid;gap:10px;margin:18px 0;padding:15px;border:1px solid var(--line);border-radius:14px;background:#181f2e}.identity-steps span{display:flex;align-items:center;gap:10px;font-size:13px}.identity-steps b{width:24px;height:24px;flex:0 0 24px;display:grid;place-items:center;border-radius:7px;background:#342b62;color:#c4bbff}.identity-error{margin-top:12px;color:var(--red);font-size:13px}.identity-buttons{display:flex;gap:8px;flex-wrap:wrap}.identity-buttons button{margin-right:0}body.bright .identity-sheet{background:#fff}body.bright .identity-steps{background:#f0f2f7;color:#182033}
+.login-select{position:relative}.login-select-button{width:100%;margin:0;display:flex;align-items:center;justify-content:space-between;text-align:left;background:#1b2232;border:1px solid #303b55;padding:14px;font-size:16px;font-weight:500}.login-select-button svg{width:22px;height:22px;color:var(--muted);transition:transform .16s}.login-select-button.open svg{transform:rotate(180deg)}
+.login-select-menu{position:absolute;top:calc(100% + 7px);left:0;right:0;z-index:50;padding:6px;border:1px solid #303b55;border-radius:14px;background:#1b2232;box-shadow:0 14px 36px #0009}.login-select-menu button{width:100%;margin:0;padding:12px;display:flex;align-items:center;justify-content:space-between;text-align:left;border-radius:10px;background:transparent}.login-select-menu button+button{margin-top:3px}.login-select-menu button:hover,.login-select-menu button:active{background:#283149!important}.login-select-menu b,.login-select-menu small{display:block}.login-select-menu small{margin-top:3px;color:var(--muted);font-size:11px;font-weight:500}.login-select-menu strong{color:var(--green);font-size:18px}
+.country-menu{padding:0;overflow:hidden}.country-search{padding:9px;border-bottom:1px solid #303b55}.country-search input{padding:11px 12px;border-radius:10px;font-size:14px}.country-options{max-height:260px;overflow-y:auto;overscroll-behavior:contain}.country-options button{border-radius:0;padding:12px 13px}.country-options button+button{margin-top:0;border-top:1px solid #273047}.country-option-copy{min-width:0;display:flex;align-items:center;justify-content:space-between;width:100%;gap:14px}.country-option-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.country-option-copy small{flex:0 0 auto;margin-top:0;font-size:13px}.country-empty{padding:18px;color:var(--muted);font-size:13px;text-align:center}
+body.bright .login-select-button,body.bright .login-select-menu{background:#f0f2f7;color:#182033;border-color:#d5dbea}body.bright .login-select-menu button:hover,body.bright .login-select-menu button:active{background:#dfe4ef!important}
+body.bright .country-search{border-color:#d5dbea}body.bright .country-options button+button{border-color:#d5dbea}
+</style>
+<script src="calling-codes.js"></script>
+<script>
+toggleLoginMethod=function(){
+  const opening=channelMenu.classList.contains('hidden');
+  closeCountryMenu();
+  channelMenu.classList.toggle('hidden',!opening);
+  channelButton.classList.toggle('open',opening);
+  channelButton.setAttribute('aria-expanded',opening?'true':'false');
+};
+setLoginMethod=function(value){
+  channel.value=value;
+  channelLabel.textContent=value==='phone'?'Phone':'Email';
+  channelEmail.querySelector('strong').textContent=value==='email'?'✓':'';
+  channelPhone.querySelector('strong').textContent=value==='phone'?'✓':'';
+  calling.hidden=value!=='phone';
+  accountLabel.textContent=value==='phone'?'PHONE':'EMAIL';
+  accountId.type=value==='phone'?'tel':'email';
+  accountId.inputMode=value==='phone'?'tel':'email';
+  accountId.autocomplete=value==='phone'?'tel':'email';
+  accountId.placeholder=value==='phone'?'Phone number':'Email address';
+  channelMenu.classList.add('hidden');
+  channelButton.classList.remove('open');
+  channelButton.setAttribute('aria-expanded','false');
+};
+function closeCountryMenu(){
+  countryMenu.classList.add('hidden');
+  countryButton.classList.remove('open');
+  countryButton.setAttribute('aria-expanded','false');
+}
+function toggleCountryMenu(){
+  const opening=countryMenu.classList.contains('hidden');
+  channelMenu.classList.add('hidden');
+  channelButton.classList.remove('open');
+  channelButton.setAttribute('aria-expanded','false');
+  countryMenu.classList.toggle('hidden',!opening);
+  countryButton.classList.toggle('open',opening);
+  countryButton.setAttribute('aria-expanded',opening?'true':'false');
+  if(opening){countrySearch.value='';renderCallingCodes('');setTimeout(()=>countrySearch.focus(),0)}
+}
+function setCountryCode(entry){
+  country.value=entry.code;
+  countryLabel.textContent=entry.name+' ('+entry.code+')';
+  closeCountryMenu();
+}
+function renderCallingCodes(query){
+  const needle=(query||'').trim().toLocaleLowerCase();
+  const matches=DEEPTEST_CALLING_CODES.filter(entry=>!needle||entry.name.toLocaleLowerCase().includes(needle)||entry.code.includes(needle)||entry.iso.includes(needle));
+  countryOptions.replaceChildren();
+  if(!matches.length){const empty=document.createElement('div');empty.className='country-empty';empty.textContent='No matching country';countryOptions.appendChild(empty);return}
+  matches.forEach(entry=>{const button=document.createElement('button');button.type='button';const copy=document.createElement('span');copy.className='country-option-copy';const name=document.createElement('b');name.textContent=entry.name;const code=document.createElement('small');code.textContent=entry.code;copy.append(name,code);button.appendChild(copy);button.addEventListener('click',()=>setCountryCode(entry));countryOptions.appendChild(button)});
+}
+let pendingCaptchaLogin=null;
+let pendingIdentityChallenge=null;
+function beginLogin(data){
+  let cb='cb'+(++callbackId);
+  window[cb]=value=>{
+    const result=parse(value);
+    if(result.interaction&&result.kind==='captcha'&&result.payload){
+      render('loginOut',JSON.stringify({ok:false,error:'Complete the slider verification to send your code.'}));
+      showCaptchaDialog(result.payload,data);
+    }else{
+      render('loginOut',value);
+    }
+    delete window[cb];
+  };
+  DeepTest.api('login',JSON.stringify(data),cb);
+}
+sendCode=function(){
+  beginLogin({channel:channel.value,accountId:accountId.value,country:country.value});
+};
+function showCaptchaDialog(html,loginData){
+  pendingCaptchaLogin=loginData;
+  captchaFrame.style.height='320px';
+  captchaFrame.onload=installCaptchaSizer;
+  captchaFrame.srcdoc=html;
+  captchaDialog.classList.remove('hidden');
+}
+let captchaResizeObserver=null;
+function installCaptchaSizer(){
+  if(captchaResizeObserver){captchaResizeObserver.disconnect();captchaResizeObserver=null}
+  let doc;
+  try{doc=captchaFrame.contentDocument}catch(error){return}
+  if(!doc||!doc.body)return;
+  const resize=()=>{
+    try{
+      const leaves=[...doc.body.querySelectorAll('*')].filter(element=>!element.firstElementChild);
+      let contentBottom=0;
+      leaves.forEach(element=>{
+        const style=doc.defaultView.getComputedStyle(element);
+        const rect=element.getBoundingClientRect();
+        if(style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0)contentBottom=Math.max(contentBottom,rect.bottom+doc.defaultView.scrollY);
+      });
+      const natural=Math.max(260,Math.ceil(contentBottom+18));
+      const header=document.querySelector('.captcha-head').offsetHeight;
+      const note=document.querySelector('.captcha-note').offsetHeight;
+      const available=Math.max(260,window.innerHeight-header-note-72);
+      captchaFrame.style.height=Math.min(natural,available)+'px';
+    }catch(error){}
+  };
+  resize();
+  [120,350,800,1500].forEach(delay=>setTimeout(resize,delay));
+  if(window.ResizeObserver){captchaResizeObserver=new ResizeObserver(resize);captchaResizeObserver.observe(doc.body)}
+}
+function closeCaptchaDialog(){
+  if(captchaResizeObserver){captchaResizeObserver.disconnect();captchaResizeObserver=null}
+  captchaDialog.classList.add('hidden');
+  captchaFrame.srcdoc='';
+  pendingCaptchaLogin=null;
+}
+function openSourceLicenses(){
+  licenseText.textContent='Loading notices and license…';
+  licenseDialog.classList.remove('hidden');
+  try{licenseText.textContent=DeepTest.openSourceLicenses()}catch(error){licenseText.textContent='Could not load the bundled license: '+error}
+}
+function closeSourceLicenses(){
+  licenseDialog.classList.add('hidden');
+}
+function showIdentityDialog(challenge){
+  pendingIdentityChallenge={url:String(challenge.url||''),stage:String(challenge.kind||'verification')};
+  identityError.classList.add('hidden');
+  identityError.textContent='';
+  identityDialog.classList.remove('hidden');
+}
+function closeIdentityDialog(){
+  identityDialog.classList.add('hidden');
+  pendingIdentityChallenge=null;
+}
+function openIdentityCheck(){
+  if(!pendingIdentityChallenge||!pendingIdentityChallenge.url){
+    identityError.textContent='HeyTap did not provide a verification page. Start login again.';
+    identityError.classList.remove('hidden');
+    return;
+  }
+  DeepTest.openExternalUrl(pendingIdentityChallenge.url);
+}
+function continueIdentityCheck(){
+  if(!pendingIdentityChallenge)return;
+  identityError.textContent='Checking the completed verification…';
+  identityError.classList.remove('hidden');
+  const challenge={...pendingIdentityChallenge};
+  let cb='cb'+(++callbackId);
+  window[cb]=value=>{
+    const result=parse(value);
+    if(result.interaction&&(result.kind==='verification'||result.kind==='completion')){
+      showIdentityDialog(result);
+      identityError.textContent='HeyTap requires one more browser step. Open the identity check again.';
+      identityError.classList.remove('hidden');
+    }else if(result.ok){
+      closeIdentityDialog();
+      render('loginOut',value);
+      refreshAccount();
+    }else{
+      identityError.textContent=result.error||result.message||'The identity check is not complete yet.';
+      identityError.classList.remove('hidden');
+    }
+    delete window[cb];
+  };
+  DeepTest.api('resume',JSON.stringify({stage:challenge.stage}),cb);
+}
+window.onNativeCaptchaPrompt=function(message){
+  if(!pendingCaptchaLogin)return;
+  const raw=String(message||'');
+  try{
+    const value=JSON.parse(raw);
+    const success=value.success===true||value.ret===0||value.code===0;
+    const token=value.token||value.result||value.ticket||value.data;
+    if(!success||!token)return;
+  }catch(error){return}
+  const login={...pendingCaptchaLogin,captchaCode:raw};
+  closeCaptchaDialog();
+  loginOut.className='result';
+  loginOut.textContent='Slider verified. Sending your verification code…';
+  beginLogin(login);
+};
+document.addEventListener('click',function(event){
+  if(!event.target.closest('#channelSelect')){
+    channelMenu.classList.add('hidden');
+    channelButton.classList.remove('open');
+    channelButton.setAttribute('aria-expanded','false');
+  }
+  if(!event.target.closest('#callingSelect'))closeCountryMenu();
+});
+exportSettings=function(){
+  settingsOut.textContent='Choose where to save your complete DeepTest backup…';
+  const profile={
+    udid:udid.value,
+    model:model.value,
+    ota_version:otaVersion.value,
+    chip_id:chipId.value
+  };
+  DeepTest.exportSettings(JSON.stringify(profile));
+};
+refreshAccount=function(){
+  const x=parse(DeepTest.accountInfo());
+  const eyebrow=document.querySelector('#account .eyebrow');
+  const title=document.querySelector('#account .title');
+  const description=document.querySelector('#account .card>p');
+  accountSignedIn.classList.toggle('hidden',!x.authorized);
+  accountSignedOut.classList.toggle('hidden',!!x.authorized);
+  if(x.authorized){
+    eyebrow.textContent='ACCOUNT';
+    title.textContent='Your HeyTap account';
+    description.textContent='Your DeepTesting authorization is stored securely on this device.';
+    signedInAccount.textContent=x.account||'Imported HeyTap account';
+    loginOut.textContent='Authorization is ready and stored in this app\'s private storage.';
+    loginOut.className='result ok';
+  }else{
+    eyebrow.textContent='ACCOUNT LOGIN';
+    title.textContent='Connect your HeyTap account';
+    description.textContent='Verification and tokens stay in this app\'s private storage.';
+    loginOut.textContent=x.message||'Not signed in.';
+    loginOut.className='result';
+  }
+};
+logoutAccount=function(){
+  logoutDialog.classList.remove('hidden');
+};
+closeLogoutDialog=function(){
+  logoutDialog.classList.add('hidden');
+};
+confirmLogout=function(){
+  const result=DeepTest.logoutAccount();
+  closeLogoutDialog();
+  refreshAccount();
+  render('loginOut',result);
+};
+refreshAccount();
+</script>
+</body>
+</html>

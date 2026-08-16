@@ -80,8 +80,65 @@ jobs:
           name: macos-release
           path: DeepTest2-macOS.zip
 
+  android:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: android-app/**/*.gradle*
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK platform
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Verify prebuilt GhostLock helper
+        working-directory: android-app
+        run: sha256sum --check PREBUILT_GHOSTLOCK.sha256
+      - name: Prepare Android release metadata
+        env:
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          version_name="${RELEASE_TAG#v}"
+          version_name="${version_name#V}"
+          echo "DEEPTEST_ANDROID_VERSION_NAME=$version_name" >> "$GITHUB_ENV"
+          echo "DEEPTEST_ANDROID_VERSION_CODE=$GITHUB_RUN_NUMBER" >> "$GITHUB_ENV"
+      - name: Prepare Android signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Android release-signing secrets are not configured." >&2
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/deeptest-release.jks"
+          echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/deeptest-release.jks" >> "$GITHUB_ENV"
+          echo "ANDROID_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "ANDROID_KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+      - name: Build signed Android APK
+        working-directory: android-app
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon clean assembleRelease
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
+          cp app/build/outputs/apk/release/app-release.apk ../DeepTest2-android-arm64.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-release
+          path: DeepTest2-android-arm64.apk
+          if-no-files-found: error
+
   release:
-    needs: [linux, windows, macos]
+    needs: [linux, windows, macos, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -4,6 +4,8 @@ DeepTest 2.0 is a desktop GUI for OnePlus/HeyTap DeepTesting workflows. It repla
 
 This is an independent GUI built on the protocol implementation and research from [mikoker/deeptest](https://github.com/mikoker/deeptest). Please review the upstream project’s license and documentation.
 
+The Android client contains modified code from [YuKongA/ghostlock-app](https://github.com/YuKongA/ghostlock-app), licensed under Apache-2.0. See [Third-party notices](THIRD_PARTY_NOTICES.md) for attribution and modification details.
+
 <p align="center">
   <img src="docs/images/deeptest2-main.png" alt="DeepTest 2.0 unlock application screen" width="760">
 </p>

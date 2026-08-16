@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GhostLock</string>
+    <string name="action_run">Run</string>
+    <string name="action_running">Running…</string>
+    <string name="action_advanced">Advanced</string>
+    <string name="action_import_offsets">Import offsets.json</string>
+    <string name="action_export_offsets">Export offsets.json</string>
+    <string name="action_parse_ota">Parse OTA link</string>
+    <string name="action_parse">Parse image</string>
+    <string name="import_success">Offsets imported</string>
+    <string name="import_failed">Import failed</string>
+    <string name="offsets_already_exist">Offsets already exist (built-in)</string>
+    <string name="overwrite_title">Kernel offsets already exist</string>
+    <string name="overwrite_message">These kernels already have offsets:\n%1$s\n\nOverwrite them with the new values?</string>
+    <string name="overwrite_yes">Overwrite</string>
+    <string name="parse_title">Parse source</string>
+    <string name="parse_option_boot">boot.img</string>
+    <string name="parse_option_boot_xbl">boot.img + xbl_config.img</string>
+    <string name="parse_url_title">Full package URL</string>
+    <string name="parse_url_hint">Paste full OTA zip URL</string>
+    <string name="parse_start">Start</string>
+    <string name="parse_pick_boot_hint">Pick boot.img first, then xbl_config.img</string>
+    <string name="parse_pick_xbl_hint">Pick xbl_config.img</string>
+    <string name="parse_success">Offsets parsed</string>
+    <string name="parse_failed">Parse failed</string>
+    <string name="parse_failed_route">Kernel incompatible with the current exploit chain</string>
+    <string name="parse_failed_kallsyms">Cannot recover kernel symbol table</string>
+    <string name="parse_failed_url">Invalid OTA URL</string>
+    <string name="parse_timeout">Parse timed out</string>
+    <string name="cancel">Cancel</string>
+    <string name="export_title">Select kernel to export</string>
+    <string name="export_share">Share offsets</string>
+    <string name="export_failed">Export failed</string>
+    <string name="export_none">No offsets to export</string>
+    <string name="export_current_marker">%1$s (current device)</string>
+    <string name="action_copy">Copy</string>
+    <string name="copied">Log copied</string>
+    <string name="log_title">Log</string>
+    <string name="device_label">Device</string>
+    <string name="kernel_label">kernel</string>
+    <string name="kernel_supported">Supported</string>
+    <string name="kernel_unsupported">Not supported</string>
+    <string name="support_label">Support</string>
+    <string name="cpu_pair_label">CPU cores</string>
+</resources>

@@ -8,3 +8,8 @@ dist/
 *.spec
 DeepTest2-linux-x86_64.tar.gz
 oplusreserve1/*.img
+/backups/
+android-app/local.properties
+*.jks
+*.keystore
+keystore.properties
