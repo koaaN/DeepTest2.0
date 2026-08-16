@@ -86,11 +86,11 @@
 </div>
 <div class="field">
 <label>MODEL</label>
-<input id="model" value="PLK110">
+<input id="model">
 </div>
 <div class="field">
 <label>OTA VERSION</label>
-<input id="otaVersion" value="PLK110_11.A.68_0680_202606250030">
+<input id="otaVersion">
 </div>
 <div class="field">
 <label>CHIP ID</label>
@@ -432,6 +432,45 @@ confirmLogout=function(){
   refreshAccount();
   render('loginOut',result);
 };
+const requestDeviceProfiles={
+  '24831':{name:'OnePlus 15',model:'PLK110',otaVersion:'PLK110_11.A.68_0680_202606250030'},
+  '24851':{name:'OnePlus Ace 6',model:'PLQ110',otaVersion:'PLQ110_11.A.56_0560_202607171908'},
+  '24855':{name:'OnePlus Ace 6T',model:'PLR110',otaVersion:'PLR110_11.A.62_0620_202606152334'},
+  '25821':{name:'OnePlus 15T',model:'PLZ110',otaVersion:'PLZ110_11.A.31_0310_202605280615'}
+};
+let activeRequestPrjid='';
+function requestPrjid(info){
+  const raw=String((info&&info.prjid)||'').trim();
+  return Object.prototype.hasOwnProperty.call(requestDeviceProfiles,raw)?raw:'';
+}
+function initializeRequestProfile(){
+  const live=parse(DeepTest.deviceInfo());
+  const saved=parse(DeepTest.requestProfile());
+  const prjid=requestPrjid(live);
+  const detected=requestDeviceProfiles[prjid];
+  activeRequestPrjid=prjid;
+  udid.value=(saved.udid||live.udid||udid.value||'').trim();
+  chipId.value=(live.chipId||saved.chip_id||chipId.value||'').trim();
+  model.value=detected?detected.model:'';
+  otaVersion.value=detected?detected.otaVersion:'';
+  device.textContent=((detected&&detected.name)||live.model||'Android device')+(prjid?' · PRJ-ID '+prjid:'');
+}
+request=function(endpoint){
+  api('request',{
+    endpoint,
+    prjid:activeRequestPrjid,
+    udid:udid.value,
+    model:model.value,
+    otaVersion:otaVersion.value,
+    chipId:chipId.value
+  },'requestOut');
+};
+const previousAuthImported=window.onAuthImported;
+window.onAuthImported=function(value){
+  previousAuthImported(value);
+  if(parse(value).ok)initializeRequestProfile();
+};
+initializeRequestProfile();
 refreshAccount();
 </script>
 </body>

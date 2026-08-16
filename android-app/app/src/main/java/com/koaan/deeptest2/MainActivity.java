@@ -223,6 +223,10 @@ public class MainActivity extends AppCompatActivity {
         @JavascriptInterface public String deviceInfo() {
             return RootOps.deviceInfo(MainActivity.this);
         }
+        @JavascriptInterface public String requestProfile() {
+            JSONObject profile = readObject(new File(getFilesDir(), "auth/gui-settings.json"));
+            return profile == null ? "{}" : profile.toString();
+        }
         @JavascriptInterface public boolean hasAuth() {
             return new File(getFilesDir(), "auth/auth.json").isFile();
         }

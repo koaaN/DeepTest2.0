@@ -9,6 +9,14 @@ from deeptesting.models import DeviceProfile
 from deeptesting.tokens import TokenCache
 
 
+DEVICE_REQUEST_PROFILES = {
+    "24831": ("PLK110", "PLK110_11.A.68_0680_202606250030"),
+    "24851": ("PLQ110", "PLQ110_11.A.56_0560_202607171908"),
+    "24855": ("PLR110", "PLR110_11.A.62_0620_202606152334"),
+    "25821": ("PLZ110", "PLZ110_11.A.31_0310_202605280615"),
+}
+
+
 def _result(**values):
     return json.dumps(values, ensure_ascii=False)
 
@@ -95,7 +103,20 @@ def dispatch(action, raw, base):
                     saved_profile = json.loads(profile_file.read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
                     saved_profile = {}
-            profile = DeviceProfile(udid=saved_profile.get("udid") or data.get("udid") or "", device_id=token.device_id, model=saved_profile.get("model") or data.get("model", "PLK110"), ota_version=saved_profile.get("ota_version") or data.get("otaVersion", "PLK110_11.A.68_0680_202606250030"), chip_id=saved_profile.get("chip_id") or data.get("chipId", ""))
+            prjid = str(data.get("prjid") or "").strip()
+            detected_profile = DEVICE_REQUEST_PROFILES.get(prjid)
+            if not detected_profile:
+                raise ValueError(
+                    "Unsupported or missing PRJ-ID. No request profile was selected."
+                )
+            model, ota_version = detected_profile
+            profile = DeviceProfile(
+                udid=data.get("udid") or saved_profile.get("udid") or "",
+                device_id=token.device_id,
+                model=model,
+                ota_version=ota_version,
+                chip_id=data.get("chipId") or saved_profile.get("chip_id") or "",
+            )
             if not profile.udid:
                 raise ValueError("Enter the phone UDID in the request profile before running a request.")
             response = DeepTestingClient(profile, token).request(data["endpoint"])

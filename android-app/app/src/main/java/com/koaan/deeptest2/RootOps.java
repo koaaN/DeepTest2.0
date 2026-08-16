@@ -48,8 +48,14 @@ final class RootOps {
     static String deviceInfo(Context context) {
         try {
             JSONObject j = new JSONObject();
-            String prj = prop("ro.boot.prjname");
-            if (prj.isBlank()) prj = prop("ro.boot.project_name");
+            String prj = "";
+            for (String property : new String[]{
+                    "ro.boot.prjname", "ro.boot.project_name", "ro.boot.prjid",
+                    "ro.boot.project_id", "ro.product.prjname"
+            }) {
+                prj = prop(property).trim();
+                if (!prj.isBlank()) break;
+            }
             String udid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
             j.put("model", prop("ro.product.model").isBlank() ? Build.MODEL : prop("ro.product.model"))
                     .put("prjid", prj).put("chipId", prop("ro.boot.chipid"))
