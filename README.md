@@ -97,6 +97,15 @@ macOS:   /Users/<user>/.config/deeptesting/
 
 Treat these JSON files as secrets, keep a secure backup somewhere safe, and never upload them. Device settings are also local and are not sent to the repository.
 
+### Importing a PC account into the Android app
+
+Import the desktop files in this order:
+
+1. Import `gui-settings.json`.
+2. After that finishes, import `auth.json`.
+
+The settings file must be imported first so the Android app can restore the account configuration before loading its authorization tokens.
+
 ## Backup storage
 
 Before installing unlock authorization, DeepTest saves the original `oplusreserve1` image under:
