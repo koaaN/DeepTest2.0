@@ -84,6 +84,18 @@ def _adb_path() -> str:
     raise RuntimeError("ADB is not installed or available in the bundled Platform Tools.")
 
 
+ELIGIBILITY_REQUIREMENTS = {
+    "supportDeepTestModel": "ColorOS 16.0+ device; not an enterprise/carrier-customized phone or tablet; sold in mainland China",
+    "colorosVersionMatch": "ColorOS 16.0 or later",
+    "hasSurplusQuota": "Deep testing quota has not reached the limit",
+    "phoneBoundAndRealName": "Account completed real-name and face verification and bound a phone number",
+    "registerDaysMatch": "Account registered for at least 60 days, with no violations or anomalies",
+    "continuousLoginDaysMatch": "Account logged in on this device for 7 consecutive days",
+    "realNameYearUnlockLimitMatch": "No more than 4 devices unlocked within a year under the same real name",
+    "realNameNotAppliedIn30Days": "No application under the same real name within 30 days",
+}
+
+
 class Api:
     def __init__(self) -> None:
         self.settings = dict(DEFAULTS)
@@ -356,6 +368,20 @@ class Api:
             if start >= 0:
                 payload = json.loads(output[start:])
                 data = payload.get("data")
+                if endpoint == "unlock-condition-match" and isinstance(data, dict):
+                    failed = [
+                        f"{key} ({ELIGIBILITY_REQUIREMENTS[key]})" if key in ELIGIBILITY_REQUIREMENTS else key
+                        for key, value in data.items()
+                        if value is False and key != "allMatch"
+                    ]
+                    if failed or data.get("allMatch") is False:
+                        self.log += output.rstrip() + "\n"
+                        detail = "; ".join(failed) or "allMatch"
+                        return {
+                            "ok": False,
+                            "message": self._redact(f"Not eligible. Failed checks: {detail}."),
+                            "state": self.get_state(),
+                        }
                 if isinstance(data, str):
                     code = data
                 elif isinstance(data, dict):
